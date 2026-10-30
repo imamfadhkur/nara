@@ -49,3 +49,4 @@ class BackupDatabaseTest extends TestCase
             ->assertSuccessful();
     }
 }
+

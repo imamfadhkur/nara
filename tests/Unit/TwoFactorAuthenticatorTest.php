@@ -74,3 +74,4 @@ class TwoFactorAuthenticatorTest extends TestCase
         $this->assertEmpty($user->two_factor_recovery_codes);
     }
 }
+

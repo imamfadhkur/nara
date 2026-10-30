@@ -96,3 +96,4 @@ class DemoSeederTest extends TestCase
         $this->assertSame(MatrixClassifier::WAITING, $classifier->classify($t21, $wednesday));
     }
 }
+

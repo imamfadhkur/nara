@@ -124,3 +124,4 @@ class ProgressCalculatorTest extends TestCase
         $this->assertSame(25, $this->calc->forGoal($goal));
     }
 }
+

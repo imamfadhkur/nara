@@ -107,3 +107,4 @@ class WipGuardTest extends TestCase
         $this->assertCount(3, $this->guard->activeIn($user, WipSlot::Business));
     }
 }
+

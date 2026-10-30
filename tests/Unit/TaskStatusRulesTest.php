@@ -64,3 +64,4 @@ class TaskStatusRulesTest extends TestCase
         TaskStatusRules::assert(TaskStatus::Cancelled, TaskStatus::InProgress, null);
     }
 }
+
