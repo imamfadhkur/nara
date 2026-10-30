@@ -66,7 +66,7 @@
                                 </a>
                                 <button
                                     type="button"
-                                    @click="moveModal = true; activeTaskId = {{ $task->id }}; activeTaskTitle = $el.dataset.title; targetStatus = $el.dataset.status"
+                                    @click.stop="moveModal = true; activeTaskId = {{ $task->id }}; activeTaskTitle = $el.dataset.title; targetStatus = $el.dataset.status"
                                     data-title="{{ $task->title }}"
                                     data-status="{{ $task->status->value }}"
                                     class="text-sky-700 hover:underline font-medium text-[11px]"
@@ -85,70 +85,81 @@
         @endforeach
 
         {{-- Modal Ubah Status --}}
-        <template x-if="moveModal">
-            <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" x-cloak>
-                <div @click.outside="moveModal = false" class="bg-white rounded-xl p-6 max-w-md w-full shadow-xl">
-                    <h3 class="text-base font-semibold text-slate-900 mb-1">Pindahkan Status Task</h3>
-                    <p class="text-xs text-slate-500 mb-4" x-text="activeTaskTitle"></p>
+        <div
+            x-cloak
+            x-show="moveModal"
+            @keydown.escape.window="moveModal = false"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs"
+        >
+            {{-- Backdrop click to close --}}
+            <div class="fixed inset-0" @click="moveModal = false"></div>
 
-                    <form :action="'{{ url('panel/kanban/tasks') }}/' + activeTaskId + '/move'" method="POST" class="space-y-4">
-                        @csrf
-                        <x-form-field name="status" label="Pilih Status Baru" :required="true">
-                            <select name="status" x-model="targetStatus" class="nara-input">
-                                @foreach (\App\Support\Enums\TaskStatus::cases() as $st)
-                                    <option value="{{ $st->value }}">{{ $st->label() }}</option>
-                                @endforeach
-                            </select>
+            {{-- Modal box --}}
+            <div class="relative bg-white rounded-2xl p-6 max-w-md w-full shadow-xl border border-slate-200 z-10 space-y-4">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 class="text-base font-bold text-slate-900">Pindahkan Status Task</h3>
+                    <button type="button" @click="moveModal = false" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+                </div>
+
+                <p class="text-xs text-slate-600 font-medium bg-slate-50 p-2 rounded-lg border border-slate-200/60" x-text="activeTaskTitle"></p>
+
+                <form :action="'{{ url('panel/kanban/tasks') }}/' + activeTaskId + '/move'" method="POST" class="space-y-4 text-sm">
+                    @csrf
+                    <x-form-field name="status" label="Pilih Status Baru" :required="true">
+                        <select name="status" x-model="targetStatus" class="nara-input">
+                            @foreach (\App\Support\Enums\TaskStatus::cases() as $st)
+                                <option value="{{ $st->value }}">{{ $st->label() }}</option>
+                            @endforeach
+                        </select>
+                    </x-form-field>
+
+                    <div x-show="targetStatus === 'waiting'" x-cloak class="p-3 bg-amber-50 rounded-lg border border-amber-200">
+                        <x-form-field name="waiting_reason" label="Alasan Menunggu (Wajib)">
+                            <input type="text" name="waiting_reason" placeholder="Contoh: menunggu draft dari rekan..." class="nara-input bg-white text-xs">
+                        </x-form-field>
+                    </div>
+
+                    <div x-show="targetStatus === 'done'" x-cloak class="p-3 bg-emerald-50 rounded-lg border border-emerald-200 space-y-3">
+                        <x-form-field name="actual_minutes" label="Waktu Realisasi (Menit, Opsional)">
+                            <input type="number" name="actual_minutes" placeholder="Misal: 45" class="nara-input bg-white text-xs">
                         </x-form-field>
 
-                        <div x-show="targetStatus === 'waiting'" x-cloak class="p-3 bg-amber-50 rounded-lg border border-amber-200">
-                            <x-form-field name="waiting_reason" label="Alasan Menunggu (Wajib)">
-                                <input type="text" name="waiting_reason" placeholder="Contoh: menunggu draft dari rekan..." class="nara-input bg-white text-xs">
-                            </x-form-field>
-                        </div>
+                        <div class="pt-2 border-t border-emerald-200/60" x-data="{ wantOutput: false }">
+                            <label class="inline-flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="record_output" value="1" x-model="wantOutput"
+                                       class="rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500">
+                                <span class="text-xs font-semibold text-emerald-900">Catat Hasil Karya / Output Sekarang? (D-16)</span>
+                            </label>
 
-                        <div x-show="targetStatus === 'done'" x-cloak class="p-3 bg-emerald-50 rounded-lg border border-emerald-200 space-y-3">
-                            <x-form-field name="actual_minutes" label="Waktu Realisasi (Menit, Opsional)">
-                                <input type="number" name="actual_minutes" placeholder="Misal: 45" class="nara-input bg-white text-xs">
-                            </x-form-field>
-
-                            <div class="pt-2 border-t border-emerald-200/60" x-data="{ wantOutput: false }">
-                                <label class="inline-flex items-center gap-2 cursor-pointer">
-                                    <input type="checkbox" name="record_output" value="1" x-model="wantOutput"
-                                           class="rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500">
-                                    <span class="text-xs font-semibold text-emerald-900">Catat Hasil Karya / Output Sekarang? (D-16)</span>
-                                </label>
-
-                                <div x-show="wantOutput" class="mt-2 space-y-2">
-                                    <div>
-                                        <label class="block text-[11px] font-medium text-slate-700 mb-0.5">Judul Output</label>
-                                        <input type="text" name="output_title" :value="activeTaskTitle"
-                                               class="nara-input bg-white text-xs py-1">
-                                    </div>
-                                    <div>
-                                        <label class="block text-[11px] font-medium text-slate-700 mb-0.5">Jenis Output</label>
-                                        <select name="output_type" class="nara-input bg-white text-xs py-1">
-                                            @foreach (\App\Support\Enums\OutputType::cases() as $ot)
-                                                <option value="{{ $ot->value }}">{{ $ot->label() }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label class="block text-[11px] font-medium text-slate-700 mb-0.5">Tautan Bukti (URL)</label>
-                                        <input type="url" name="evidence_url" placeholder="https://github.com/... atau deliverable"
-                                               class="nara-input bg-white text-xs py-1">
-                                    </div>
+                            <div x-show="wantOutput" class="mt-2 space-y-2">
+                                <div>
+                                    <label class="block text-[11px] font-medium text-slate-700 mb-0.5">Judul Output</label>
+                                    <input type="text" name="output_title" :value="activeTaskTitle"
+                                           class="nara-input bg-white text-xs py-1">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-medium text-slate-700 mb-0.5">Jenis Output</label>
+                                    <select name="output_type" class="nara-input bg-white text-xs py-1">
+                                        @foreach (\App\Support\Enums\OutputType::cases() as $ot)
+                                            <option value="{{ $ot->value }}">{{ $ot->label() }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-medium text-slate-700 mb-0.5">Tautan Bukti (URL)</label>
+                                    <input type="url" name="evidence_url" placeholder="https://github.com/... atau deliverable"
+                                           class="nara-input bg-white text-xs py-1">
                                 </div>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="flex justify-end gap-2 pt-2">
-                            <button type="button" @click="moveModal = false" class="nara-btn-secondary text-xs">Batal</button>
-                            <button type="submit" class="nara-btn-primary text-xs">Perbarui Status</button>
-                        </div>
-                    </form>
-                </div>
+                    <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                        <button type="button" @click="moveModal = false" class="nara-btn-secondary text-xs">Batal</button>
+                        <button type="submit" class="nara-btn-primary text-xs">Perbarui Status</button>
+                    </div>
+                </form>
             </div>
-        </template>
+        </div>
     </div>
 </x-panel-layout>

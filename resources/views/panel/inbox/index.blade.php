@@ -29,7 +29,19 @@
     </div>
 
     {{-- Daftar Item Menunggu Triase --}}
-    <div class="space-y-3" x-data="{ activeModal: null, activeId: null, activeContent: '' }">
+    <div class="space-y-3" x-data="{
+        activeModal: null,
+        activeId: null,
+        activeContent: '',
+        openTaskModal(id, content) {
+            this.activeId = id;
+            this.activeContent = content;
+            this.activeModal = 'task';
+        },
+        closeModal() {
+            this.activeModal = null;
+        }
+    }">
         <div class="flex items-center justify-between">
             <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">
                 Menunggu Triase ({{ $items->total() }})
@@ -59,7 +71,7 @@
                         {{-- Tombol Konversi ke Task --}}
                         <button
                             type="button"
-                            @click="activeModal = 'task'; activeId = {{ $item->id }}; activeContent = $el.dataset.content"
+                            @click.stop="openTaskModal({{ $item->id }}, $el.getAttribute('data-content'))"
                             data-content="{{ $item->content }}"
                             class="nara-btn-primary text-xs py-1 px-2.5"
                         >
@@ -108,47 +120,58 @@
         @endif
 
         {{-- Modal Triase ke Task --}}
-        <template x-if="activeModal === 'task'">
-            <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" x-cloak>
-                <div @click.outside="activeModal = null" class="bg-white rounded-xl p-6 max-w-lg w-full shadow-xl">
-                    <h3 class="text-base font-semibold text-slate-900 mb-2">Triase ke Task</h3>
-                    <p class="text-xs text-slate-500 mb-4" x-text="activeContent"></p>
+        <div
+            x-cloak
+            x-show="activeModal === 'task'"
+            @keydown.escape.window="closeModal()"
+            class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs"
+        >
+            {{-- Backdrop click to close --}}
+            <div class="fixed inset-0" @click="closeModal()"></div>
 
-                    <form :action="'{{ url('panel/inbox') }}/' + activeId + '/triage'" method="POST" class="space-y-4">
-                        @csrf
-                        <input type="hidden" name="target" value="task">
-
-                        <x-form-field name="project_id" label="Pilih Project Wadah" :required="true">
-                            <select name="project_id" required class="nara-input">
-                                <option value="">— Pilih Project —</option>
-                                @foreach ($projects as $proj)
-                                    <option value="{{ $proj->id }}">{{ $proj->name }}</option>
-                                @endforeach
-                            </select>
-                        </x-form-field>
-
-                        <x-form-field name="title" label="Judul Task">
-                            <input type="text" name="title" :value="activeContent" required class="nara-input">
-                        </x-form-field>
-
-                        <div class="grid grid-cols-2 gap-3">
-                            <x-form-field name="estimated_minutes" label="Estimasi (Menit)">
-                                <input type="number" name="estimated_minutes" placeholder="60" class="nara-input">
-                            </x-form-field>
-
-                            <x-form-field name="due_date" label="Tenggat">
-                                <input type="date" name="due_date" class="nara-input">
-                            </x-form-field>
-                        </div>
-
-                        <div class="flex justify-end gap-2 pt-2">
-                            <button type="button" @click="activeModal = null" class="nara-btn-secondary text-xs">Batal</button>
-                            <button type="submit" class="nara-btn-primary text-xs">Jadikan Task</button>
-                        </div>
-                    </form>
+            {{-- Modal Box --}}
+            <div class="relative bg-white rounded-2xl shadow-xl border border-slate-200 max-w-lg w-full p-6 space-y-4 z-10">
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 class="font-bold text-slate-900 text-base">Triase ke Task</h3>
+                    <button type="button" @click="closeModal()" class="text-slate-400 hover:text-slate-600 text-lg">✕</button>
                 </div>
+
+                <p class="text-xs text-slate-600 font-medium bg-slate-50 p-2.5 rounded-lg border border-slate-200/60 leading-relaxed whitespace-pre-line" x-text="activeContent"></p>
+
+                <form :action="'{{ url('panel/inbox') }}/' + activeId + '/triage'" method="POST" class="space-y-4 text-sm">
+                    @csrf
+                    <input type="hidden" name="target" value="task">
+
+                    <x-form-field name="project_id" label="Pilih Project Wadah" :required="true">
+                        <select name="project_id" required class="nara-input">
+                            <option value="">— Pilih Project —</option>
+                            @foreach ($projects as $proj)
+                                <option value="{{ $proj->id }}">{{ $proj->name }}</option>
+                            @endforeach
+                        </select>
+                    </x-form-field>
+
+                    <x-form-field name="title" label="Judul Task" :required="true">
+                        <input type="text" name="title" :value="activeContent" required class="nara-input">
+                    </x-form-field>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <x-form-field name="estimated_minutes" label="Estimasi (Menit)">
+                            <input type="number" name="estimated_minutes" placeholder="60" class="nara-input">
+                        </x-form-field>
+
+                        <x-form-field name="due_date" label="Tenggat">
+                            <input type="date" name="due_date" class="nara-input">
+                        </x-form-field>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                        <button type="button" @click="closeModal()" class="nara-btn-secondary text-xs">Batal</button>
+                        <button type="submit" class="nara-btn-primary text-xs">Jadikan Task</button>
+                    </div>
+                </form>
             </div>
-        </template>
+        </div>
     </div>
 </x-panel-layout>
 
