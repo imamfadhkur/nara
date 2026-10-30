@@ -7,10 +7,16 @@ use App\Domain\Goals\GoalService;
 use App\Domain\Projects\ProjectService;
 use App\Domain\Settings\SettingService;
 use App\Domain\Tasks\TaskService;
+use App\Models\InboxItem;
+use App\Models\Output;
+use App\Models\Schedule;
 use App\Models\User;
+use App\Support\Enums\ActivityEvent;
 use App\Support\Enums\ActivitySource;
 use App\Support\Enums\GoalStatus;
+use App\Support\Enums\InboxStatus;
 use App\Support\Enums\Level;
+use App\Support\Enums\OutputType;
 use App\Support\Enums\ProjectCategory;
 use App\Support\Enums\ProjectOrigin;
 use App\Support\Enums\ProjectStatus;
@@ -71,6 +77,8 @@ class DemoSeeder extends Seeder
             $p->tasks()->withTrashed()->forceDelete();
             $p->forceDelete();
         });
+        $user->inboxItems()->delete();
+        $user->outputs()->withTrashed()->forceDelete();
         $user->lifeDomains()->delete();
         $user->settings()->delete();
 
@@ -85,7 +93,7 @@ class DemoSeeder extends Seeder
         $taskService = app(TaskService::class);
 
         $logger->withSource(ActivitySource::System, function () use (
-            $user, $goalService, $projectService, $taskService, $day, $stamp, $monday
+            $user, $goalService, $projectService, $taskService, $day, $stamp, $monday, $tz, $logger
         ) {
             // 9.2 Life Domain
             $dAcademic = $goalService->createDomain($user, ['name' => 'Karier & Akademik', 'color' => 'blue', 'sort_order' => 1]);
@@ -259,6 +267,7 @@ class DemoSeeder extends Seeder
                 ['p' => $p2, 'title' => 'Menunggu outline dari rekan peneliti', 'status' => TaskStatus::Waiting, 'waiting_reason' => 'menunggu outline dari rekan peneliti', 'priority' => TaskPriority::Normal, 'est' => null, 'act' => null, 'due' => null],
             ];
 
+            $tModels = [];
             foreach ($tasks as $idx => $row) {
                 $t = $taskService->create($row['p'], [
                     'title' => $row['title'],
@@ -272,6 +281,8 @@ class DemoSeeder extends Seeder
                     'sort_order' => $idx + 1,
                 ]);
 
+                $tModels[$idx + 1] = $t;
+
                 foreach ($row['subtasks'] ?? [] as [$subTitle, $subDone]) {
                     $sub = $taskService->addSubtask($t, $subTitle);
                     if ($subDone) {
@@ -279,6 +290,126 @@ class DemoSeeder extends Seeder
                     }
                 }
             }
+
+            // 9.7 Jadwal Minggu Ini
+            $schedTime = fn (int $offsetFromMonday, string $hi): Carbon => Carbon::parse($monday->copy()->addDays($offsetFromMonday)->toDateString() . ' ' . $hi, $tz)->utc();
+
+            $scheduleDefs = [
+                // [Task Number, dayOffset, start, end, note]
+                [1,  0, '08:00', '09:00', 'Sesi revisi komentar'],
+                [2,  0, '13:00', '14:30', 'Sesi akta pendirian'],
+                [3,  1, '13:00', '15:00', 'Sesi wireframe'],
+                [4,  2, '09:00', '12:00', 'Sesi revisi bab metode'],
+                [5,  2, '13:00', '13:45', 'Sesi laporan bug'],
+                [6,  2, '15:30', '17:00', 'Sesi migration Fase 0'],
+                [7,  3, '09:00', '11:00', 'Sesi tabel hasil'],
+                [8,  3, '13:00', '15:00', 'Sesi OSS/NIB'],
+                [10, 4, '09:00', '10:30', 'Sesi response letter'],
+                [11, 4, '13:00', '14:30', 'Sesi copy landing page'],
+                [12, 5, '08:00', '10:30', 'Sesi baca paper pembanding'],
+                [13, 5, '13:00', '15:00', 'Sesi CRUD Task'],
+            ];
+
+            foreach ($scheduleDefs as [$tNum, $dOffset, $startStr, $endStr, $note]) {
+                Schedule::create([
+                    'task_id' => $tModels[$tNum]->id,
+                    'start_at' => $schedTime($dOffset, $startStr),
+                    'end_at' => $schedTime($dOffset, $endStr),
+                    'source' => 'nara',
+                    'note' => $note,
+                ]);
+            }
+
+            // 9.8 Output
+            Output::create([
+                'user_id' => $user->id,
+                'project_id' => $p3->id,
+                'task_id' => $tModels[2]->id,
+                'title' => 'Checklist dokumen akta pendirian',
+                'output_type' => OutputType::LegalDoc,
+                'evidence_url' => 'https://storage.nara.local/evidence/akta-pendirian-checklist.pdf',
+                'produced_at' => $day(0),
+                'note' => 'Berkas PDF checklist persyaratan notaris',
+            ]);
+
+            Output::create([
+                'user_id' => $user->id,
+                'project_id' => $p5->id,
+                'task_id' => $tModels[3]->id,
+                'title' => 'Wireframe landing page Academy',
+                'output_type' => OutputType::Prototype,
+                'evidence_url' => 'https://figma.com/file/demo-academy-wireframe',
+                'produced_at' => $day(1),
+                'note' => 'Tautan berkas desain Figma 5 section utama',
+            ]);
+
+            Output::create([
+                'user_id' => $user->id,
+                'project_id' => $p6->id,
+                'task_id' => null,
+                'title' => 'Repo nara-core (commit awal Fase 0)',
+                'output_type' => OutputType::Github,
+                'evidence_url' => 'https://github.com/nara/nara-core',
+                'produced_at' => $day(-5), // 21/10
+                'note' => 'Tautan repositori git foundation architecture',
+            ]);
+
+            // 9.9 Inbox
+            InboxItem::create([
+                'user_id' => $user->id,
+                'content' => 'Cek harga domain baru',
+                'source' => 'telegram',
+                'hint' => 'task',
+                'status' => InboxStatus::Pending,
+            ]);
+
+            InboxItem::create([
+                'user_id' => $user->id,
+                'content' => 'Ide: fitur voice note di NARA',
+                'source' => 'telegram',
+                'hint' => 'idea',
+                'status' => InboxStatus::Pending,
+            ]);
+
+            InboxItem::create([
+                'user_id' => $user->id,
+                'content' => 'Follow up klien X minggu depan',
+                'source' => 'web',
+                'hint' => 'task',
+                'status' => InboxStatus::Pending,
+            ]);
+
+            InboxItem::create([
+                'user_id' => $user->id,
+                'content' => 'Diajak join riset dosen Y — pikirkan dulu',
+                'source' => 'telegram',
+                'hint' => 'idea',
+                'status' => InboxStatus::Pending,
+            ]);
+
+            InboxItem::create([
+                'user_id' => $user->id,
+                'content' => 'Beli kabel jumper',
+                'source' => 'telegram',
+                'hint' => 'task',
+                'status' => InboxStatus::Converted,
+                'converted_to_type' => 'task',
+                'converted_to_id' => $tModels[20]->id,
+                'processed_at' => $stamp(-1),
+            ]);
+
+            InboxItem::create([
+                'user_id' => $user->id,
+                'content' => 'Ide aplikasi jadwal piket',
+                'source' => 'web',
+                'hint' => 'idea',
+                'status' => InboxStatus::Discarded,
+                'processed_at' => $stamp(-1),
+            ]);
+
+            // 9.10 Log Aktivitas Tambahan
+            $logger->log($tModels[3], ActivityEvent::StatusChanged, ['status' => 'todo'], ['status' => 'done']);
+            $logger->log($tModels[21], ActivityEvent::StatusChanged, ['status' => 'in_progress'], ['status' => 'waiting', 'waiting_reason' => 'menunggu outline dari rekan peneliti']);
 
             // Setel ulang last_activity_at sesuai tabel 9.4 (terutama P2 stagnan 6 hari: 22/10).
             foreach ([

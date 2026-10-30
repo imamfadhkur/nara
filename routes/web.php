@@ -1,20 +1,24 @@
 <?php
 
 use App\Http\Controllers\Panel\GoalController;
+use App\Http\Controllers\Panel\InboxController;
+use App\Http\Controllers\Panel\KanbanController;
 use App\Http\Controllers\Panel\LifeDomainController;
+use App\Http\Controllers\Panel\OutputController;
 use App\Http\Controllers\Panel\ProjectController;
 use App\Http\Controllers\Panel\SettingsController;
 use App\Http\Controllers\Panel\TaskController;
+use App\Http\Controllers\Panel\TodayController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
     return auth()->check()
-        ? redirect()->route('panel.projects.index')
+        ? redirect()->route('panel.today')
         : redirect()->route('login');
 });
 
-Route::redirect('/dashboard', '/panel/projects')
+Route::redirect('/dashboard', '/panel/today')
     ->middleware(['auth'])
     ->name('dashboard');
 
@@ -27,12 +31,26 @@ Route::middleware(['auth', 'two-factor'])
     ->prefix('panel')
     ->name('panel.')
     ->group(function () {
-        Route::redirect('/', '/panel/projects')->name('home');
+        Route::redirect('/', '/panel/today')->name('home');
+
+        Route::get('today', TodayController::class)->name('today');
+
+        // Inbox (Bagian 3.7 & 8.4)
+        Route::get('inbox', [InboxController::class, 'index'])->name('inbox.index');
+        Route::post('inbox', [InboxController::class, 'store'])->name('inbox.store');
+        Route::post('inbox/{inboxItem}/triage', [InboxController::class, 'triage'])->name('inbox.triage');
+
+        // Kanban Board (Bagian 5.2)
+        Route::get('kanban', [KanbanController::class, 'index'])->name('kanban.index');
+        Route::post('kanban/tasks/{task}/move', [KanbanController::class, 'move'])->name('kanban.tasks.move');
 
         Route::resource('life-domains', LifeDomainController::class);
         Route::resource('goals', GoalController::class);
         Route::resource('projects', ProjectController::class);
         Route::resource('tasks', TaskController::class);
+
+        // Outputs (D-16, Bagian 5.4 & 9.8)
+        Route::resource('outputs', OutputController::class)->only(['index', 'store', 'destroy']);
 
         Route::post('tasks/{task}/subtasks', [TaskController::class, 'storeSubtask'])
             ->name('tasks.subtasks.store');

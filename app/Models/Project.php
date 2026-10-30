@@ -87,5 +87,11 @@ class Project extends Model
     {
         return $this->hasMany(Task::class);
     }
+
+    /** @return HasMany<Output, $this> */
+    public function outputs(): HasMany
+    {
+        return $this->hasMany(Output::class)->orderByDesc('produced_at');
+    }
 }
 

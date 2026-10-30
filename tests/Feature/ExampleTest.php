@@ -8,10 +8,10 @@ it('redirects guest to login', function () {
     $response->assertRedirect(route('login'));
 });
 
-it('redirects authenticated user to panel projects', function () {
+it('redirects authenticated user to panel today', function () {
     $user = User::factory()->withTwoFactor()->create();
 
     $response = $this->actingAs($user)->get('/');
 
-    $response->assertRedirect(route('panel.projects.index'));
+    $response->assertRedirect(route('panel.today'));
 });

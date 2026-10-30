@@ -122,4 +122,107 @@ class PanelCrudTest extends TestCase
             'title' => 'Publikasi Ilmiah Tahun Ini',
         ]);
     }
+
+    public function test_can_view_today_dashboard(): void
+    {
+        $response = $this->actingAs($this->user)->get(route('panel.today'));
+        $response->assertOk();
+        $response->assertSee('Hari Ini');
+        $response->assertSee('Kapasitas');
+    }
+
+    public function test_can_view_kanban_board(): void
+    {
+        $response = $this->actingAs($this->user)->get(route('panel.kanban.index'));
+        $response->assertOk();
+        $response->assertSee('TODO');
+        $response->assertSee('IN PROGRESS');
+        $response->assertSee('WAITING');
+        $response->assertSee('DONE');
+    }
+
+    public function test_can_move_task_in_kanban_and_record_output(): void
+    {
+        $project = Project::create([
+            'user_id' => $this->user->id,
+            'name' => 'Project Kanban Test',
+            'category' => ProjectCategory::Client,
+            'origin' => ProjectOrigin::Freelance,
+            'status' => ProjectStatus::Active,
+            'wip_slot' => WipSlot::Business,
+        ]);
+
+        $task = Task::create([
+            'project_id' => $project->id,
+            'title' => 'Implementasi API Pembayaran',
+            'status' => TaskStatus::InProgress,
+            'estimated_minutes' => 60,
+        ]);
+
+        $response = $this->actingAs($this->user)->post(route('panel.kanban.tasks.move', $task), [
+            'status' => 'done',
+            'actual_minutes' => 50,
+            'record_output' => '1',
+            'output_title' => 'PR #42 API Pembayaran Siap Review',
+            'output_type' => 'github',
+            'evidence_url' => 'https://github.com/nara/core/pull/42',
+        ]);
+
+        $response->assertRedirect();
+
+        $task->refresh();
+        $this->assertSame(TaskStatus::Done, $task->status);
+        $this->assertSame(50, $task->actual_minutes);
+
+        $this->assertDatabaseHas('outputs', [
+            'user_id' => $this->user->id,
+            'project_id' => $project->id,
+            'task_id' => $task->id,
+            'title' => 'PR #42 API Pembayaran Siap Review',
+            'output_type' => 'github',
+            'evidence_url' => 'https://github.com/nara/core/pull/42',
+        ]);
+    }
+
+    public function test_can_view_and_manage_outputs(): void
+    {
+        $project = Project::create([
+            'user_id' => $this->user->id,
+            'name' => 'Project Output Test',
+            'category' => ProjectCategory::Feature,
+            'origin' => ProjectOrigin::Personal,
+            'status' => ProjectStatus::Active,
+            'wip_slot' => WipSlot::Personal,
+        ]);
+
+        // 1. Catat output
+        $response = $this->actingAs($this->user)->post(route('panel.outputs.store'), [
+            'project_id' => $project->id,
+            'title' => 'Buku Panduan Pengguna v1.0',
+            'output_type' => 'pdf',
+            'evidence_url' => 'https://example.com/panduan.pdf',
+            'produced_at' => now()->toDateString(),
+            'note' => 'Dokumen 20 halaman',
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('outputs', [
+            'user_id' => $this->user->id,
+            'title' => 'Buku Panduan Pengguna v1.0',
+            'output_type' => 'pdf',
+        ]);
+
+        // 2. Lihat index output
+        $indexResponse = $this->actingAs($this->user)->get(route('panel.outputs.index'));
+        $indexResponse->assertOk();
+        $indexResponse->assertSee('Buku Panduan Pengguna v1.0');
+
+        // 3. Hapus output
+        $output = \App\Models\Output::where('title', 'Buku Panduan Pengguna v1.0')->firstOrFail();
+        $delResponse = $this->actingAs($this->user)->delete(route('panel.outputs.destroy', $output));
+        $delResponse->assertRedirect(route('panel.outputs.index'));
+
+        $this->assertSoftDeleted('outputs', ['id' => $output->id]);
+    }
 }
+

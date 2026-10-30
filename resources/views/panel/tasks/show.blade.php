@@ -4,6 +4,8 @@
         $quadrant = $matrix->classify($task);
     @endphp
 
+    <div x-data="{ openDoneModal: false, openOutputModal: false }">
+
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <x-kpi-card
             title="Status & Kuadran"
@@ -47,7 +49,16 @@
                 @endif
             </div>
 
-            <div class="flex items-center gap-2">
+            <div class="flex items-center flex-wrap gap-2">
+                @if ($task->status !== \App\Support\Enums\TaskStatus::Done)
+                    <button type="button" @click="openDoneModal = true" class="nara-btn-primary text-xs bg-emerald-600 hover:bg-emerald-700">
+                        ✓ Tandai Selesai
+                    </button>
+                @else
+                    <button type="button" @click="openOutputModal = true" class="nara-btn-secondary text-xs text-emerald-700 border-emerald-300 hover:bg-emerald-50">
+                        + Catat Bukti Output
+                    </button>
+                @endif
                 <a href="{{ route('panel.tasks.edit', $task) }}" class="nara-btn-secondary text-xs">Ubah Task</a>
                 <x-confirm-dialog
                     :action="route('panel.tasks.destroy', $task)"
@@ -168,6 +179,111 @@
                 <p class="text-xs text-slate-400 italic">Belum ada riwayat aktivitas tercatat.</p>
             @endforelse
         </div>
+    </div>
+
+    {{-- Modal Tandai Selesai + Catat Output (D-16) --}}
+    <div x-cloak x-show="openDoneModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+        <div @click.away="openDoneModal = false" class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-semibold text-slate-900 text-base">Tandai Task Selesai</h3>
+                <button @click="openDoneModal = false" class="text-slate-400 hover:text-slate-600">✕</button>
+            </div>
+
+            <form method="POST" action="{{ route('panel.kanban.tasks.move', $task) }}" class="space-y-4 text-sm" x-data="{ wantOutput: true }">
+                @csrf
+                <input type="hidden" name="status" value="done">
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Realisasi Waktu (Menit, Opsional)</label>
+                    <input type="number" name="actual_minutes" value="{{ $task->estimated_minutes }}" placeholder="Misal: 60"
+                           class="w-full rounded-lg border-slate-300 text-sm focus:border-sky-600 focus:ring-sky-500">
+                </div>
+
+                <div class="p-3.5 bg-emerald-50 rounded-xl border border-emerald-200 space-y-3">
+                    <label class="inline-flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" name="record_output" value="1" x-model="wantOutput"
+                               class="rounded border-emerald-300 text-emerald-600 focus:ring-emerald-500">
+                        <span class="text-xs font-semibold text-emerald-950">Catat Hasil Karya / Bukti Output Sekaligus (D-16)</span>
+                    </label>
+
+                    <div x-show="wantOutput" class="space-y-2.5 pt-1">
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 uppercase tracking-wider mb-0.5">Judul Output</label>
+                            <input type="text" name="output_title" value="{{ $task->title }}"
+                                   class="w-full rounded-lg border-slate-300 bg-white text-xs focus:border-sky-600 focus:ring-sky-500">
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 uppercase tracking-wider mb-0.5">Jenis Output</label>
+                            <select name="output_type" class="w-full rounded-lg border-slate-300 bg-white text-xs focus:border-sky-600 focus:ring-sky-500">
+                                @foreach (\App\Support\Enums\OutputType::cases() as $type)
+                                    <option value="{{ $type->value }}">{{ $type->label() }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 uppercase tracking-wider mb-0.5">Tautan Bukti (URL)</label>
+                            <input type="url" name="evidence_url" placeholder="https://github.com/... atau deliverable"
+                                   class="w-full rounded-lg border-slate-300 bg-white text-xs focus:border-sky-600 focus:ring-sky-500">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" @click="openDoneModal = false" class="nara-btn-secondary text-xs">Batal</button>
+                    <button type="submit" class="nara-btn-primary text-xs bg-emerald-600 hover:bg-emerald-700">Simpan & Selesaikan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Modal Catat Bukti Output untuk Task Selesai --}}
+    <div x-cloak x-show="openOutputModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-xs">
+        <div @click.away="openOutputModal = false" class="bg-white rounded-2xl shadow-xl border border-slate-200 max-w-md w-full p-6 space-y-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <h3 class="font-semibold text-slate-900 text-base">Catat Bukti Output untuk Task Ini</h3>
+                <button @click="openOutputModal = false" class="text-slate-400 hover:text-slate-600">✕</button>
+            </div>
+
+            <form method="POST" action="{{ route('panel.outputs.store') }}" class="space-y-4 text-sm">
+                @csrf
+                <input type="hidden" name="project_id" value="{{ $task->project_id }}">
+                <input type="hidden" name="task_id" value="{{ $task->id }}">
+                <input type="hidden" name="produced_at" value="{{ now()->toDateString() }}">
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Judul Output *</label>
+                    <input type="text" name="title" value="{{ $task->title }}" required
+                           class="w-full rounded-lg border-slate-300 text-sm focus:border-sky-600 focus:ring-sky-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Jenis Output *</label>
+                    <select name="output_type" required class="w-full rounded-lg border-slate-300 text-sm focus:border-sky-600 focus:ring-sky-500">
+                        @foreach (\App\Support\Enums\OutputType::cases() as $type)
+                            <option value="{{ $type->value }}">{{ $type->label() }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Tautan Bukti / URL</label>
+                    <input type="url" name="evidence_url" placeholder="https://github.com/... atau deliverable"
+                           class="w-full rounded-lg border-slate-300 text-sm focus:border-sky-600 focus:ring-sky-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Catatan</label>
+                    <textarea name="note" rows="2" placeholder="Catatan singkat..."
+                              class="w-full rounded-lg border-slate-300 text-sm focus:border-sky-600 focus:ring-sky-500"></textarea>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" @click="openOutputModal = false" class="nara-btn-secondary text-xs">Batal</button>
+                    <button type="submit" class="nara-btn-primary text-xs">Simpan Output</button>
+                </div>
+            </form>
+        </div>
+    </div>
     </div>
 </x-panel-layout>
 

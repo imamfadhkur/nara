@@ -87,6 +87,18 @@ class User extends Authenticatable
         return $this->hasMany(Setting::class);
     }
 
+    /** @return HasMany<InboxItem, $this> */
+    public function inboxItems(): HasMany
+    {
+        return $this->hasMany(InboxItem::class)->orderByDesc('created_at');
+    }
+
+    /** @return HasMany<Output, $this> */
+    public function outputs(): HasMany
+    {
+        return $this->hasMany(Output::class)->orderByDesc('produced_at');
+    }
+
     public function hasTwoFactorEnabled(): bool
     {
         return ! is_null($this->two_factor_secret) && ! is_null($this->two_factor_confirmed_at);

@@ -32,25 +32,49 @@
                 </svg>
                 <div>
                     <span class="text-base font-bold tracking-wide text-white">NARA</span>
-                    <span class="block text-[10px] text-cyan-300/80 leading-none">Personal AI Agent · v0.1</span>
+                    <span class="block text-[10px] text-cyan-300/80 leading-none">Personal AI Agent · v0.5</span>
                 </div>
             </a>
             <button type="button" @click="sidebarOpen = false" class="lg:hidden text-slate-400 hover:text-white">✕</button>
         </div>
 
         <nav class="flex-1 px-3 py-4 space-y-1 text-sm overflow-y-auto">
-            <div class="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Hirarki Inti</div>
+            <div class="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Navigasi Harian</div>
 
             @php
-                $navItems = [
-                    ['route' => 'panel.life-domains.*', 'href' => route('panel.life-domains.index'), 'label' => 'Life Domains'],
-                    ['route' => 'panel.goals.*', 'href' => route('panel.goals.index'), 'label' => 'Goals'],
-                    ['route' => 'panel.projects.*', 'href' => route('panel.projects.index'), 'label' => 'Projects & WIP'],
-                    ['route' => 'panel.tasks.*', 'href' => route('panel.tasks.index'), 'label' => 'Tasks (Table)'],
+                $inboxPendingCount = auth()->user() ? \App\Models\InboxItem::where('user_id', auth()->id())->where('status', 'pending')->count() : 0;
+
+                $dailyItems = [
+                    ['route' => 'panel.today', 'href' => route('panel.today'), 'label' => 'Today (Fokus)', 'badge' => null],
+                    ['route' => 'panel.inbox.*', 'href' => route('panel.inbox.index'), 'label' => 'Inbox (Capture)', 'badge' => $inboxPendingCount > 0 ? $inboxPendingCount : null],
+                    ['route' => 'panel.kanban.*', 'href' => route('panel.kanban.index'), 'label' => 'Kanban View', 'badge' => null],
+                    ['route' => 'panel.tasks.*', 'href' => route('panel.tasks.index'), 'label' => 'Tasks (Table)', 'badge' => null],
+                    ['route' => 'panel.outputs.*', 'href' => route('panel.outputs.index'), 'label' => 'Outputs (Karya)', 'badge' => null],
                 ];
             @endphp
 
-            @foreach ($navItems as $item)
+            @foreach ($dailyItems as $item)
+                @php $active = request()->routeIs($item['route']); @endphp
+                <a href="{{ $item['href'] }}"
+                   class="flex items-center justify-between rounded-lg px-3 py-2 font-medium transition {{ $active ? 'bg-sky-600/20 text-cyan-300 ring-1 ring-cyan-400/30' : 'text-slate-300 hover:bg-slate-800/70 hover:text-white' }}">
+                    <span>{{ $item['label'] }}</span>
+                    @if ($item['badge'])
+                        <span class="rounded-full bg-cyan-500/20 px-2 py-0.5 text-xs text-cyan-300 font-semibold">{{ $item['badge'] }}</span>
+                    @endif
+                </a>
+            @endforeach
+
+            <div class="pt-4 px-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Komitmen & Goal</div>
+
+            @php
+                $structureItems = [
+                    ['route' => 'panel.projects.*', 'href' => route('panel.projects.index'), 'label' => 'Projects & WIP'],
+                    ['route' => 'panel.goals.*', 'href' => route('panel.goals.index'), 'label' => 'Goals'],
+                    ['route' => 'panel.life-domains.*', 'href' => route('panel.life-domains.index'), 'label' => 'Life Domains'],
+                ];
+            @endphp
+
+            @foreach ($structureItems as $item)
                 @php $active = request()->routeIs($item['route']); @endphp
                 <a href="{{ $item['href'] }}"
                    class="flex items-center justify-between rounded-lg px-3 py-2 font-medium transition {{ $active ? 'bg-sky-600/20 text-cyan-300 ring-1 ring-cyan-400/30' : 'text-slate-300 hover:bg-slate-800/70 hover:text-white' }}">

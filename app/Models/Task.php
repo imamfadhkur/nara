@@ -70,6 +70,30 @@ class Task extends Model
         return $this->hasMany(TaskSubtask::class)->orderBy('sort_order')->orderBy('id');
     }
 
+    /** @return HasMany<Schedule, $this> */
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(Schedule::class)->orderBy('start_at');
+    }
+
+    /** @return HasMany<Output, $this> */
+    public function outputs(): HasMany
+    {
+        return $this->hasMany(Output::class)->orderByDesc('produced_at');
+    }
+
+    /** @return HasMany<TaskComment, $this> */
+    public function comments(): HasMany
+    {
+        return $this->hasMany(TaskComment::class)->orderByDesc('created_at');
+    }
+
+    /** @return \Illuminate\Database\Eloquent\Relations\BelongsToMany<Tag, $this> */
+    public function tags(): \Illuminate\Database\Eloquent\Relations\BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class, 'task_tags');
+    }
+
     /** Terlambat: tenggat lewat (tanggal lokal pengguna) dan belum selesai/batal. */
     public function isOverdue(?string $timezone = null): bool
     {
