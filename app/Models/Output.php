@@ -74,3 +74,4 @@ class Output extends Model
         return $this->hasMany(OutputFile::class);
     }
 }
+

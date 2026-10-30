@@ -91,3 +91,4 @@ class InboxController extends Controller
         ]);
     }
 }
+

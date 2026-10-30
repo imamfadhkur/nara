@@ -78,3 +78,4 @@ class CapacityCalculationTest extends TestCase
         $this->assertSame('warning', $capAfterPause['tone']);
     }
 }
+

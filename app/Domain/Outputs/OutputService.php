@@ -67,3 +67,4 @@ class OutputService
         $output->delete();
     }
 }
+

@@ -130,3 +130,4 @@ return new class extends Migration
         Schema::dropIfExists('inbox_items');
     }
 };
+

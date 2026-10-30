@@ -57,6 +57,12 @@ class TelegramWebhookHandler
 
         // 3. Routing Perintah
         if (str_starts_with($text, '/')) {
+            // Dukungan klik cepat /done_123
+            if (preg_match('/^\/done_(\d+)$/i', $text, $matches)) {
+                $this->handleDone($user, $chatId, $matches[1]);
+                return;
+            }
+
             $parts = explode(' ', $text, 2);
             $command = strtolower($parts[0]);
             $argument = trim($parts[1] ?? '');
@@ -65,6 +71,7 @@ class TelegramWebhookHandler
                 '/add' => $this->handleAdd($user, $chatId, $argument, $messageId),
                 '/idea' => $this->handleIdea($user, $chatId, $argument, $messageId),
                 '/inbox' => $this->handleInbox($user, $chatId),
+                '/tasks' => $this->handleTasks($user, $chatId),
                 '/cap' => $this->handleCapacity($user, $chatId),
                 '/today' => $this->handleToday($user, $chatId),
                 '/done' => $this->handleDone($user, $chatId, $argument),
@@ -166,11 +173,13 @@ class TelegramWebhookHandler
             ->orderBy('start_at')
             ->get();
 
-        $overdueCount = Task::query()
+        $overdueTasks = Task::query()
             ->whereHas('project', fn ($q) => $q->where('user_id', $user->id))
             ->whereIn('status', [TaskStatus::Todo, TaskStatus::InProgress, TaskStatus::Waiting])
             ->where('due_date', '<', $today->toDateString())
-            ->count();
+            ->with('project')
+            ->orderBy('due_date')
+            ->get();
 
         $cap = $this->capacity->calculateWeekly($user);
 
@@ -181,13 +190,23 @@ class TelegramWebhookHandler
         } else {
             foreach ($schedules as $s) {
                 $time = $s->start_at->setTimezone($tz)->format('H:i') . '–' . $s->end_at->setTimezone($tz)->format('H:i');
-                $statusMark = $s->task->status === TaskStatus::Done ? "✓" : "•";
-                $msg .= "{$statusMark} <code>{$time}</code> " . htmlspecialchars($s->task->title) . " (<i>" . htmlspecialchars($s->task->project->name) . "</i>)\n";
+                if ($s->task->status === TaskStatus::Done) {
+                    $msg .= "✓ <code>{$time}</code> <s>" . htmlspecialchars($s->task->title) . "</s> (#{$s->task->id})\n";
+                } else {
+                    $msg .= "• <code>{$time}</code> <b>" . htmlspecialchars($s->task->title) . "</b> (#{$s->task->id})\n"
+                         .  "   <i>" . htmlspecialchars($s->task->project->name) . "</i> — selesai: /done_{$s->task->id}\n";
+                }
             }
         }
 
-        if ($overdueCount > 0) {
-            $msg .= "\n⚠️ <b>{$overdueCount} task terlambat</b>";
+        if ($overdueTasks->isNotEmpty()) {
+            $msg .= "\n⚠️ <b>Task Terlambat (" . $overdueTasks->count() . "):</b>\n";
+            foreach ($overdueTasks->take(5) as $ot) {
+                $msg .= "• <b>#{$ot->id}</b> " . htmlspecialchars($ot->title) . " — /done_{$ot->id}\n";
+            }
+            if ($overdueTasks->count() > 5) {
+                $msg .= "<i>...dan " . ($overdueTasks->count() - 5) . " lainnya (ketik /tasks).</i>\n";
+            }
         }
 
         $msg .= "\nKapasitas minggu: <b>{$cap['percent']}%</b> ({$cap['status']})";
@@ -195,20 +214,104 @@ class TelegramWebhookHandler
         $this->client->sendMessage($chatId, $msg);
     }
 
-    private function handleDone(User $user, string $chatId, string $taskIdStr): void
+    private function handleTasks(User $user, string $chatId): void
     {
-        $id = (int) $taskIdStr;
-        if ($id <= 0) {
-            $this->client->sendMessage($chatId, "⚠️ Masukkan ID task. Contoh: <code>/done 5</code>");
+        $tasks = Task::query()
+            ->whereHas('project', fn ($q) => $q->where('user_id', $user->id)->whereNull('deleted_at'))
+            ->whereIn('status', [TaskStatus::InProgress, TaskStatus::Todo])
+            ->with('project')
+            ->orderByRaw("CASE WHEN status = 'in_progress' THEN 0 ELSE 1 END")
+            ->orderByRaw('due_date IS NULL, due_date ASC')
+            ->limit(10)
+            ->get();
+
+        if ($tasks->isEmpty()) {
+            $this->client->sendMessage($chatId, "Tidak ada task aktif yang perlu dikerjakan.");
             return;
         }
 
+        $msg = "📋 <b>Daftar Task Aktif:</b>\n\n";
+        foreach ($tasks as $t) {
+            $icon = $t->status === TaskStatus::InProgress ? "⏳" : "☐";
+            $dueInfo = $t->due_date ? " [tenggat: " . $t->due_date->format('d/m') . "]" : "";
+            $msg .= "{$icon} <b>#{$t->id}</b> " . htmlspecialchars($t->title) . "{$dueInfo}\n"
+                 .  "   <i>" . htmlspecialchars($t->project->name) . "</i> — selesai: /done_{$t->id}\n\n";
+        }
+
+        $msg .= "<i>Ketuk /done_&lt;id&gt; untuk langsung menyelesaikan.</i>";
+
+        $this->client->sendMessage($chatId, $msg);
+    }
+
+    private function handleDone(User $user, string $chatId, string $argument): void
+    {
+        // 1. Tanpa argumen: tampilkan task aktif yang siap diselesaikan
+        if ($argument === '') {
+            $activeTasks = Task::query()
+                ->whereHas('project', fn ($q) => $q->where('user_id', $user->id)->whereNull('deleted_at'))
+                ->whereIn('status', [TaskStatus::InProgress, TaskStatus::Todo])
+                ->with('project')
+                ->orderByRaw("CASE WHEN status = 'in_progress' THEN 0 ELSE 1 END")
+                ->orderByRaw('due_date IS NULL, due_date ASC')
+                ->limit(6)
+                ->get();
+
+            if ($activeTasks->isEmpty()) {
+                $this->client->sendMessage($chatId, "Tidak ada task aktif yang bisa diselesaikan saat ini.");
+                return;
+            }
+
+            $msg = "📋 <b>Pilih task yang ingin diselesaikan:</b>\n\n";
+            foreach ($activeTasks as $at) {
+                $icon = $at->status === TaskStatus::InProgress ? "⏳" : "☐";
+                $msg .= "{$icon} <b>#{$at->id}</b> " . htmlspecialchars($at->title) . "\n"
+                     .  "   ↳ Ketuk: /done_{$at->id}\n\n";
+            }
+            $msg .= "<i>Ketik /tasks untuk melihat seluruh daftar task aktif.</i>";
+
+            $this->client->sendMessage($chatId, $msg);
+            return;
+        }
+
+        // 2. Argumen bukan angka: pencarian berdasarkan judul task
+        if (! is_numeric($argument)) {
+            $matched = Task::query()
+                ->whereHas('project', fn ($q) => $q->where('user_id', $user->id)->whereNull('deleted_at'))
+                ->whereIn('status', [TaskStatus::Todo, TaskStatus::InProgress, TaskStatus::Waiting])
+                ->where('title', 'like', '%' . $argument . '%')
+                ->with('project')
+                ->limit(5)
+                ->get();
+
+            if ($matched->isEmpty()) {
+                $this->client->sendMessage($chatId, "⚠️ Tidak ditemukan task aktif dengan kata kunci: <i>" . htmlspecialchars($argument) . "</i>.\nKetik /tasks untuk melihat daftar.");
+                return;
+            }
+
+            if ($matched->count() === 1) {
+                $task = $matched->first();
+                $this->tasks->changeStatus($task, TaskStatus::Done);
+                $this->client->sendMessage($chatId, "✓ Task #{$task->id} \"<b>" . htmlspecialchars($task->title) . "</b>\" selesai!");
+                return;
+            }
+
+            $msg = "🔍 <b>Ditemukan beberapa task dengan kata kunci \"{$argument}\":</b>\n\n";
+            foreach ($matched as $m) {
+                $msg .= "• <b>#{$m->id}</b> " . htmlspecialchars($m->title) . "\n"
+                     .  "   ↳ Ketuk: /done_{$m->id}\n";
+            }
+            $this->client->sendMessage($chatId, $msg);
+            return;
+        }
+
+        // 3. Argumen angka (ID task langsung)
+        $id = (int) $argument;
         $task = Task::query()
-            ->whereHas('project', fn ($q) => $q->where('user_id', $user->id))
+            ->whereHas('project', fn ($q) => $q->where('user_id', $user->id)->whereNull('deleted_at'))
             ->find($id);
 
         if (! $task) {
-            $this->client->sendMessage($chatId, "Task #{$id} tidak ditemukan.");
+            $this->client->sendMessage($chatId, "Task #{$id} tidak ditemukan. Ketik /tasks untuk melihat daftar task aktif.");
             return;
         }
 
@@ -224,11 +327,14 @@ class TelegramWebhookHandler
             . "• <code>/idea &lt;teks&gt;</code> — Simpan ide ke Inbox\n"
             . "• <i>Ketik teks biasa</i> — Otomatis disimpan ke Inbox\n"
             . "• <code>/inbox</code> — Tampilkan item menunggu\n"
-            . "• <code>/today</code> — Jadwal hari ini & terlambat\n"
+            . "• <code>/today</code> — Jadwal hari ini & task terlambat (lengkap dengan ID)\n"
+            . "• <code>/tasks</code> — Daftar seluruh task aktif & ID-nya\n"
             . "• <code>/cap</code> — Persentase kapasitas minggu ini\n"
-            . "• <code>/done &lt;id&gt;</code> — Tandai task selesai\n"
+            . "• <code>/done</code> — Tampilkan pilihan task aktif untuk diselesaikan\n"
+            . "• <code>/done &lt;id atau judul&gt;</code> — Selesaikan task (misal: <code>/done 5</code> atau <code>/done bug</code>)\n"
             . "• <code>/help</code> — Bantuan perintah";
 
         $this->client->sendMessage($chatId, $msg);
     }
 }
+

@@ -53,3 +53,4 @@ class Schedule extends Model
         return (int) $this->start_at->diffInMinutes($this->end_at);
     }
 }
+

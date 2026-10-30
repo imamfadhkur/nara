@@ -63,3 +63,4 @@ class OutputController extends Controller
         return redirect()->route('panel.outputs.index')->with('toast', 'Catatan output dihapus.');
     }
 }
+

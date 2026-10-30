@@ -52,3 +52,4 @@ enum OutputType: string
         };
     }
 }
+

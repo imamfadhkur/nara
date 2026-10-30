@@ -15,3 +15,4 @@ class OutputFile extends Model
         return $this->belongsTo(Output::class);
     }
 }
+

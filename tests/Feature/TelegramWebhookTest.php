@@ -29,6 +29,8 @@ class TelegramWebhookTest extends TestCase
     {
         parent::setUp();
 
+        Config::set('nara.telegram.webhook_secret', null);
+
         Http::fake([
             'https://api.telegram.org/*' => Http::response(['ok' => true, 'result' => []], 200),
         ]);
@@ -153,6 +155,97 @@ class TelegramWebhookTest extends TestCase
         $task->refresh();
         $this->assertSame(TaskStatus::Done, $task->status);
         $this->assertNotNull($task->completed_at);
+    }
+
+    public function test_done_command_with_tap_slash_and_fuzzy_title(): void
+    {
+        $project = Project::create([
+            'user_id' => $this->user->id,
+            'name' => 'Project Siakad',
+            'category' => ProjectCategory::Client,
+            'origin' => ProjectOrigin::Freelance,
+            'status' => ProjectStatus::Active,
+            'wip_slot' => WipSlot::Business,
+        ]);
+
+        $task1 = Task::create([
+            'project_id' => $project->id,
+            'title' => 'Revisi bab eksperimen',
+            'status' => TaskStatus::Todo,
+            'estimated_minutes' => 60,
+        ]);
+
+        $task2 = Task::create([
+            'project_id' => $project->id,
+            'title' => 'Perbaiki validasi email siakad',
+            'status' => TaskStatus::Todo,
+            'estimated_minutes' => 45,
+        ]);
+
+        // 1. Ketuk cepat format /done_123
+        $this->postJson(route('api.telegram.webhook'), [
+            'update_id' => 7,
+            'message' => [
+                'message_id' => 701,
+                'chat' => ['id' => (int) $this->chatId],
+                'text' => "/done_{$task1->id}",
+            ],
+        ])->assertOk();
+
+        $task1->refresh();
+        $this->assertSame(TaskStatus::Done, $task1->status);
+
+        // 2. Selesaikan dengan pencarian judul kata kunci (/done email)
+        $this->postJson(route('api.telegram.webhook'), [
+            'update_id' => 8,
+            'message' => [
+                'message_id' => 801,
+                'chat' => ['id' => (int) $this->chatId],
+                'text' => "/done email",
+            ],
+        ])->assertOk();
+
+        $task2->refresh();
+        $this->assertSame(TaskStatus::Done, $task2->status);
+    }
+
+    public function test_tasks_and_done_without_arguments_prompt_options(): void
+    {
+        $project = Project::create([
+            'user_id' => $this->user->id,
+            'name' => 'Project Siakad',
+            'category' => ProjectCategory::Client,
+            'origin' => ProjectOrigin::Freelance,
+            'status' => ProjectStatus::Active,
+            'wip_slot' => WipSlot::Business,
+        ]);
+
+        Task::create([
+            'project_id' => $project->id,
+            'title' => 'Tugas Uji Menu',
+            'status' => TaskStatus::Todo,
+            'estimated_minutes' => 30,
+        ]);
+
+        // /tasks menampilkan daftar
+        $this->postJson(route('api.telegram.webhook'), [
+            'update_id' => 9,
+            'message' => [
+                'message_id' => 901,
+                'chat' => ['id' => (int) $this->chatId],
+                'text' => "/tasks",
+            ],
+        ])->assertOk();
+
+        // /done tanpa argumen memberikan pilihan task aktif
+        $this->postJson(route('api.telegram.webhook'), [
+            'update_id' => 10,
+            'message' => [
+                'message_id' => 1001,
+                'chat' => ['id' => (int) $this->chatId],
+                'text' => "/done",
+            ],
+        ])->assertOk();
     }
 
     public function test_webhook_secret_header_protection(): void

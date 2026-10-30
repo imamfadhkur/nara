@@ -48,3 +48,4 @@ class ScheduleService
         $schedule->delete();
     }
 }
+
