@@ -1,5 +1,6 @@
 <?php
 
+use App\Domain\Auth\TwoFactorAuthenticator;
 use App\Models\User;
 
 test('login screen can be rendered', function () {
@@ -8,16 +9,45 @@ test('login screen can be rendered', function () {
     $response->assertStatus(200);
 });
 
-test('users can authenticate using the login screen', function () {
-    $user = User::factory()->create();
+test('users without 2fa can authenticate directly', function () {
+    $user = User::factory()->create([
+        'password' => bcrypt('password-panjang-14'),
+    ]);
 
     $response = $this->post('/login', [
         'email' => $user->email,
-        'password' => 'password',
+        'password' => 'password-panjang-14',
     ]);
 
-    $this->assertAuthenticated();
+    $this->assertAuthenticatedAs($user);
     $response->assertRedirect(route('dashboard', absolute: false));
+});
+
+test('users with 2fa enabled are redirected to 2fa challenge', function () {
+    $user = User::factory()->withTwoFactor('JBSWY3DPEHPK3PXP')->create([
+        'password' => bcrypt('password-panjang-14'),
+    ]);
+
+    $response = $this->post('/login', [
+        'email' => $user->email,
+        'password' => 'password-panjang-14',
+    ]);
+
+    $this->assertGuest();
+    $response->assertRedirect(route('two-factor.challenge'));
+
+    // Buka layar challenge
+    $this->get(route('two-factor.challenge'))->assertStatus(200);
+
+    // Kirim kode yang salah
+    $failResponse = $this->post(route('two-factor.verify'), ['code' => '999999']);
+    $failResponse->assertSessionHasErrors('code');
+    $this->assertGuest();
+
+    // Kirim kode pemulihan yang sah
+    $successResponse = $this->post(route('two-factor.verify'), ['code' => 'AAAAA-BBBBB']);
+    $this->assertAuthenticatedAs($user);
+    $successResponse->assertRedirect(route('dashboard', absolute: false));
 });
 
 test('users can not authenticate with invalid password', function () {
@@ -25,7 +55,7 @@ test('users can not authenticate with invalid password', function () {
 
     $this->post('/login', [
         'email' => $user->email,
-        'password' => 'wrong-password',
+        'password' => 'wrong-password-14',
     ]);
 
     $this->assertGuest();

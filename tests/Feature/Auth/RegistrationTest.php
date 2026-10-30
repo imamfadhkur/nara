@@ -1,19 +1,14 @@
 <?php
 
-test('registration screen can be rendered', function () {
+test('public registration is disabled', function () {
+    // D-12 & Bagian 13.1: Registrasi publik dimatikan; NARA adalah sistem pemilik tunggal
     $response = $this->get('/register');
+    $response->assertStatus(404);
 
-    $response->assertStatus(200);
-});
-
-test('new users can register', function () {
-    $response = $this->post('/register', [
-        'name' => 'Test User',
-        'email' => 'test@example.com',
-        'password' => 'password',
-        'password_confirmation' => 'password',
+    $postResponse = $this->post('/register', [
+        'name' => 'Stranger',
+        'email' => 'stranger@example.com',
+        'password' => 'password12345678',
     ]);
-
-    $this->assertAuthenticated();
-    $response->assertRedirect(route('dashboard', absolute: false));
+    $postResponse->assertStatus(404);
 });

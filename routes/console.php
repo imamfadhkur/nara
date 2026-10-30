@@ -1,8 +1,18 @@
 <?php
 
-use Illuminate\Foundation\Inspiring;
-use Illuminate\Support\Facades\Artisan;
+use App\Jobs\BackupDatabase;
+use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('inspire', function () {
-    $this->comment(Inspiring::quote());
-})->purpose('Display an inspiring quote');
+/*
+|--------------------------------------------------------------------------
+| Jadwal Konsol NARA
+|--------------------------------------------------------------------------
+|
+| Backup database harian terenkripsi + uji restore + retensi (Bagian 13.2).
+|
+*/
+
+Schedule::job(new BackupDatabase)
+    ->dailyAt(config('nara.backup.time', '02:00'))
+    ->name('nara:daily-backup')
+    ->withoutOverlapping();

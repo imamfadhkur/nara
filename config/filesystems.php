@@ -47,6 +47,14 @@ return [
             'report' => false,
         ],
 
+        // Disk backup NARA (Bagian 13.2). Di produksi set BACKUP_DISK=s3 atau
+        // arahkan BACKUP_LOCAL_ROOT ke mount/perangkat di luar disk server utama.
+        'backup' => [
+            'driver' => 'local',
+            'root' => env('BACKUP_LOCAL_ROOT', storage_path('app/backups')),
+            'throw' => true,
+        ],
+
         's3' => [
             'driver' => 's3',
             'key' => env('AWS_ACCESS_KEY_ID'),

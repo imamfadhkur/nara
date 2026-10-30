@@ -11,10 +11,12 @@ test('confirm password screen can be rendered', function () {
 });
 
 test('password can be confirmed', function () {
-    $user = User::factory()->create();
+    $user = User::factory()->create([
+        'password' => bcrypt('password-panjang-14'),
+    ]);
 
     $response = $this->actingAs($user)->post('/confirm-password', [
-        'password' => 'password',
+        'password' => 'password-panjang-14',
     ]);
 
     $response->assertRedirect();
@@ -25,7 +27,7 @@ test('password is not confirmed with invalid password', function () {
     $user = User::factory()->create();
 
     $response = $this->actingAs($user)->post('/confirm-password', [
-        'password' => 'wrong-password',
+        'password' => 'wrong-password-14',
     ]);
 
     $response->assertSessionHasErrors();

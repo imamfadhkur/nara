@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Domain\Auth\TwoFactorAuthenticator;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Facades\Hash;
@@ -28,7 +29,8 @@ class UserFactory extends Factory
             'name' => fake()->name(),
             'email' => fake()->unique()->safeEmail(),
             'email_verified_at' => now(),
-            'password' => static::$password ??= Hash::make('password'),
+            'password' => static::$password ??= Hash::make('password-panjang-14'),
+            'timezone' => 'Asia/Jakarta',
             'remember_token' => Str::random(10),
         ];
     }
@@ -41,5 +43,18 @@ class UserFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'email_verified_at' => null,
         ]);
+    }
+
+    public function withTwoFactor(?string $secret = null): static
+    {
+        return $this->state(function () use ($secret) {
+            $auth = app(TwoFactorAuthenticator::class);
+
+            return [
+                'two_factor_secret' => $secret ?? $auth->generateSecret(),
+                'two_factor_confirmed_at' => now(),
+                'two_factor_recovery_codes' => ['AAAAA-BBBBB', 'CCCCC-DDDDD'],
+            ];
+        });
     }
 }

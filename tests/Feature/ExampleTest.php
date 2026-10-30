@@ -1,7 +1,17 @@
 <?php
 
-it('returns a successful response', function () {
+use App\Models\User;
+
+it('redirects guest to login', function () {
     $response = $this->get('/');
 
-    $response->assertStatus(200);
+    $response->assertRedirect(route('login'));
+});
+
+it('redirects authenticated user to panel projects', function () {
+    $user = User::factory()->withTwoFactor()->create();
+
+    $response = $this->actingAs($user)->get('/');
+
+    $response->assertRedirect(route('panel.projects.index'));
 });
