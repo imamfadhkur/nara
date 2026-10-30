@@ -19,7 +19,7 @@
     </div>
 
     {{-- Board 4 Kolom --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start" x-data="{ moveModal: null, activeTask: null }">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-start" x-data="{ moveModal: false, activeTaskId: null, activeTaskTitle: '', targetStatus: 'todo' }">
         @foreach ($columns as $colKey => $col)
             <div class="bg-slate-100/80 rounded-xl p-3 border border-slate-200 min-h-[500px] flex flex-col">
                 <div class="flex items-center justify-between px-2 py-1 mb-2">
@@ -66,7 +66,9 @@
                                 </a>
                                 <button
                                     type="button"
-                                    @click="moveModal = true; activeTask = {{ $task->toJson() }}"
+                                    @click="moveModal = true; activeTaskId = {{ $task->id }}; activeTaskTitle = $el.dataset.title; targetStatus = $el.dataset.status"
+                                    data-title="{{ $task->title }}"
+                                    data-status="{{ $task->status->value }}"
                                     class="text-sky-700 hover:underline font-medium text-[11px]"
                                 >
                                     Ubah Status →
@@ -85,12 +87,11 @@
         {{-- Modal Ubah Status --}}
         <template x-if="moveModal">
             <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" x-cloak>
-                <div @click.outside="moveModal = false" class="bg-white rounded-xl p-6 max-w-md w-full shadow-xl"
-                     x-data="{ targetStatus: activeTask ? activeTask.status : 'todo' }">
+                <div @click.outside="moveModal = false" class="bg-white rounded-xl p-6 max-w-md w-full shadow-xl">
                     <h3 class="text-base font-semibold text-slate-900 mb-1">Pindahkan Status Task</h3>
-                    <p class="text-xs text-slate-500 mb-4" x-text="activeTask ? activeTask.title : ''"></p>
+                    <p class="text-xs text-slate-500 mb-4" x-text="activeTaskTitle"></p>
 
-                    <form :action="'{{ url('panel/kanban/tasks') }}/' + activeTask.id + '/move'" method="POST" class="space-y-4">
+                    <form :action="'{{ url('panel/kanban/tasks') }}/' + activeTaskId + '/move'" method="POST" class="space-y-4">
                         @csrf
                         <x-form-field name="status" label="Pilih Status Baru" :required="true">
                             <select name="status" x-model="targetStatus" class="nara-input">
@@ -121,7 +122,7 @@
                                 <div x-show="wantOutput" class="mt-2 space-y-2">
                                     <div>
                                         <label class="block text-[11px] font-medium text-slate-700 mb-0.5">Judul Output</label>
-                                        <input type="text" name="output_title" :value="activeTask ? activeTask.title : ''"
+                                        <input type="text" name="output_title" :value="activeTaskTitle"
                                                class="nara-input bg-white text-xs py-1">
                                     </div>
                                     <div>

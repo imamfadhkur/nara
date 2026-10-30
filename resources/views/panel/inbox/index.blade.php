@@ -29,7 +29,7 @@
     </div>
 
     {{-- Daftar Item Menunggu Triase --}}
-    <div class="space-y-3" x-data="{ activeModal: null, activeItem: null }">
+    <div class="space-y-3" x-data="{ activeModal: null, activeId: null, activeContent: '' }">
         <div class="flex items-center justify-between">
             <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700">
                 Menunggu Triase ({{ $items->total() }})
@@ -59,7 +59,8 @@
                         {{-- Tombol Konversi ke Task --}}
                         <button
                             type="button"
-                            @click="activeModal = 'task'; activeItem = {{ $item->toJson() }}"
+                            @click="activeModal = 'task'; activeId = {{ $item->id }}; activeContent = $el.dataset.content"
+                            data-content="{{ $item->content }}"
                             class="nara-btn-primary text-xs py-1 px-2.5"
                         >
                             → Task
@@ -111,9 +112,9 @@
             <div class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4" x-cloak>
                 <div @click.outside="activeModal = null" class="bg-white rounded-xl p-6 max-w-lg w-full shadow-xl">
                     <h3 class="text-base font-semibold text-slate-900 mb-2">Triase ke Task</h3>
-                    <p class="text-xs text-slate-500 mb-4" x-text="activeItem ? activeItem.content : ''"></p>
+                    <p class="text-xs text-slate-500 mb-4" x-text="activeContent"></p>
 
-                    <form :action="'{{ url('panel/inbox') }}/' + activeItem.id + '/triage'" method="POST" class="space-y-4">
+                    <form :action="'{{ url('panel/inbox') }}/' + activeId + '/triage'" method="POST" class="space-y-4">
                         @csrf
                         <input type="hidden" name="target" value="task">
 
@@ -127,7 +128,7 @@
                         </x-form-field>
 
                         <x-form-field name="title" label="Judul Task">
-                            <input type="text" name="title" :value="activeItem ? activeItem.content : ''" required class="nara-input">
+                            <input type="text" name="title" :value="activeContent" required class="nara-input">
                         </x-form-field>
 
                         <div class="grid grid-cols-2 gap-3">
