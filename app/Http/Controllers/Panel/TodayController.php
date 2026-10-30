@@ -38,7 +38,7 @@ class TodayController extends Controller
         $todaySchedules = Schedule::query()
             ->whereHas('task.project', fn ($q) => $q->where('user_id', $user->id)->whereNull('deleted_at'))
             ->whereBetween('start_at', [$todayStartUtc, $todayEndUtc])
-            ->with(['task.project'])
+            ->with(['task.project.goal.lifeDomain', 'task.subtasks'])
             ->orderBy('start_at')
             ->get();
 
@@ -58,11 +58,19 @@ class TodayController extends Controller
             ->whereBetween('completed_at', [$weekStartUtc, $weekEndUtc])
             ->count();
 
-        // 4. Output minggu ini
+        // 4. Output minggu ini & output terbaru
         $outputsThisWeekCount = Output::query()
             ->where('user_id', $user->id)
             ->whereBetween('produced_at', [$today->copy()->startOfWeek()->toDateString(), $today->copy()->endOfWeek()->toDateString()])
             ->count();
+
+        $recentOutputs = Output::query()
+            ->where('user_id', $user->id)
+            ->with(['project'])
+            ->orderByDesc('produced_at')
+            ->orderByDesc('id')
+            ->limit(4)
+            ->get();
 
         // 5. Kapasitas mingguan (D-14 & Bagian 7.4)
         $capacityData = $this->capacity->calculateWeekly($user);
@@ -100,6 +108,7 @@ class TodayController extends Controller
             'stagnantProjects' => $stagnantProjects,
             'dueTomorrowUnscheduled' => $dueTomorrowUnscheduled,
             'stagnationDays' => $stagnationDays,
+            'recentOutputs' => $recentOutputs,
         ]);
     }
 }
