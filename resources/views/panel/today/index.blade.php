@@ -497,11 +497,20 @@
                                 @if ($out->evidence_url)
                                     <div class="pt-0.5">
                                         <a href="{{ $out->evidence_url }}" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1 text-[11px] text-sky-700 hover:underline font-medium">
-                                            <span>Buka Berkas Bukti</span>
+                                            <span>Buka Tautan Bukti</span>
                                             <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                                             </svg>
                                         </a>
+                                    </div>
+                                @endif
+                                @if ($out->files->isNotEmpty())
+                                    <div class="pt-1 flex flex-wrap gap-1">
+                                        @foreach ($out->files as $file)
+                                            <a href="{{ route('panel.outputs.download', [$out, $file]) }}" class="inline-flex items-center gap-1 text-[11px] text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 hover:bg-emerald-100 font-medium truncate max-w-[170px]" title="Unduh {{ $file->file_name }}">
+                                                <span>📄 {{ $file->file_name }}</span>
+                                            </a>
+                                        @endforeach
                                     </div>
                                 @endif
                             </div>
@@ -522,7 +531,7 @@
                         <button @click="doneModal = false" class="text-slate-400 hover:text-slate-600">✕</button>
                     </div>
 
-                    <form :action="'{{ url('panel/kanban/tasks') }}/' + activeTaskId + '/move'" method="POST" class="space-y-4 text-sm" x-data="{ wantOutput: true }">
+                    <form :action="'{{ url('panel/kanban/tasks') }}/' + activeTaskId + '/move'" method="POST" enctype="multipart/form-data" class="space-y-4 text-sm" x-data="{ wantOutput: true }">
                         @csrf
                         <input type="hidden" name="status" value="done">
 
@@ -562,6 +571,11 @@
                                     <label class="block text-[11px] font-semibold text-slate-700 uppercase tracking-wider mb-0.5">Tautan Bukti (URL)</label>
                                     <input type="url" name="evidence_url" placeholder="https://github.com/... atau tautan deliverable"
                                            class="w-full rounded-lg border-slate-300 bg-white text-xs focus:border-sky-600 focus:ring-sky-500">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-semibold text-slate-700 uppercase tracking-wider mb-0.5">Unggah Berkas Bukti (File Upload)</label>
+                                    <input type="file" name="output_file"
+                                           class="w-full text-xs text-slate-600 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-white file:text-sky-700 hover:file:bg-slate-100 border border-slate-300 rounded-lg p-1 bg-white cursor-pointer">
                                 </div>
                             </div>
                         </div>

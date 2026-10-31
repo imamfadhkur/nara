@@ -80,7 +80,7 @@ class KanbanController extends Controller
                 'task_id' => $task->id,
                 'evidence_url' => $request->string('evidence_url')->toString() ?: null,
                 'produced_at' => now()->toDateString(),
-            ]);
+            ], $request->file('output_file'));
         }
 
         if ($request->wantsJson()) {

@@ -27,7 +27,7 @@
                 <div>
                     <h2 class="text-base font-semibold text-slate-900">Autentikasi Dua Langkah (2FA TOTP)</h2>
                     <p class="text-xs text-slate-500 mt-0.5">
-                        Melindungi akun NARA dengan kode dari Google Authenticator, Aegis, atau 1Password (wajib sejak Fase 0).
+                        Melindungi akun NARA dengan kode dari Google Authenticator, Aegis, atau 1Password (lapisan keamanan tambahan opsional).
                     </p>
                 </div>
                 <div>

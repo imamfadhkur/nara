@@ -15,8 +15,8 @@ return [
     // Zona waktu tampilan default (D-18: semua waktu disimpan UTC).
     'default_timezone' => env('NARA_DEFAULT_TIMEZONE', 'Asia/Jakarta'),
 
-    // 2FA TOTP wajib untuk mengakses panel (D-12).
-    'require_two_factor' => (bool) env('NARA_REQUIRE_2FA', true),
+    // 2FA TOTP opsional sebagai lapisan keamanan tambahan.
+    'require_two_factor' => (bool) env('NARA_REQUIRE_2FA', false),
 
     // Panjang minimal kata sandi (Bagian 13.1).
     'password_min_length' => (int) env('NARA_PASSWORD_MIN', 14),

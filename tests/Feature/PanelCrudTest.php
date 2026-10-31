@@ -15,6 +15,8 @@ use App\Support\Enums\TaskPriority;
 use App\Support\Enums\TaskStatus;
 use App\Support\Enums\WipSlot;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class PanelCrudTest extends TestCase
@@ -223,6 +225,92 @@ class PanelCrudTest extends TestCase
         $delResponse->assertRedirect(route('panel.outputs.index'));
 
         $this->assertSoftDeleted('outputs', ['id' => $output->id]);
+    }
+
+    public function test_can_upload_and_download_output_file(): void
+    {
+        Storage::fake('local');
+
+        $project = Project::create([
+            'user_id' => $this->user->id,
+            'name' => 'Project Upload Test',
+            'category' => ProjectCategory::Research,
+            'origin' => ProjectOrigin::Academic,
+            'status' => ProjectStatus::Active,
+            'wip_slot' => WipSlot::Academic,
+        ]);
+
+        $file = UploadedFile::fake()->create('laporan_akhir.pdf', 500, 'application/pdf');
+
+        $response = $this->actingAs($this->user)->post(route('panel.outputs.store'), [
+            'project_id' => $project->id,
+            'title' => 'Laporan Akhir Riset S2',
+            'output_type' => 'paper',
+            'produced_at' => now()->toDateString(),
+            'file' => $file,
+        ]);
+
+        $response->assertRedirect();
+
+        $output = \App\Models\Output::where('title', 'Laporan Akhir Riset S2')->firstOrFail();
+        $this->assertDatabaseHas('output_files', [
+            'output_id' => $output->id,
+            'file_name' => 'laporan_akhir.pdf',
+        ]);
+
+        $outputFile = $output->files()->firstOrFail();
+        Storage::disk('local')->assertExists($outputFile->file_path);
+
+        // Test unduh berkas
+        $dlResponse = $this->actingAs($this->user)->get(route('panel.outputs.download', [$output, $outputFile]));
+        $dlResponse->assertOk();
+
+        // Test lihat berkas (view)
+        $viewResponse = $this->actingAs($this->user)->get(route('panel.outputs.view', [$output, $outputFile]));
+        $viewResponse->assertOk();
+
+        // User lain ditolak (403)
+        $otherUser = User::factory()->create();
+        $this->actingAs($otherUser)
+            ->get(route('panel.outputs.download', [$output, $outputFile]))
+            ->assertForbidden();
+    }
+
+    public function test_user_can_access_panel_and_edit_when_2fa_disabled(): void
+    {
+        $userWithout2fa = User::factory()->create([
+            'two_factor_secret' => null,
+            'two_factor_confirmed_at' => null,
+        ]);
+
+        // Dapat mengakses halaman Today (tidak dipaksa redirect ke settings)
+        $this->actingAs($userWithout2fa)
+            ->get(route('panel.today'))
+            ->assertOk();
+
+        // Dapat mengakses dan mengedit Settings
+        $this->actingAs($userWithout2fa)
+            ->get(route('panel.settings.index'))
+            ->assertOk();
+
+        $updateResponse = $this->actingAs($userWithout2fa)->put(route('panel.settings.update'), [
+            'timezone' => 'Asia/Jakarta',
+            'weekly_capacity_minutes' => 1800,
+            'capacity_warn_percent' => 80,
+            'capacity_over_percent' => 100,
+            'wip_limit_per_slot' => 3,
+            'stagnation_days' => 5,
+            'urgent_within_days' => 3,
+            'nara_budget_minutes_per_week' => 360,
+            'admin_budget_minutes_per_day' => 10,
+        ]);
+
+        $updateResponse->assertRedirect(route('panel.settings.index'));
+        $this->assertDatabaseHas('settings', [
+            'user_id' => $userWithout2fa->id,
+            'key' => 'weekly_capacity_minutes',
+            'value' => '1800',
+        ]);
     }
 }
 

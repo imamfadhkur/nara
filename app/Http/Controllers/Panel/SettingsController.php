@@ -70,7 +70,7 @@ class SettingsController extends Controller
 
         $user->update([
             'timezone' => $data['timezone'],
-            'telegram_chat_id' => $data['telegram_chat_id'] ?: null,
+            'telegram_chat_id' => ($data['telegram_chat_id'] ?? null) ?: null,
         ]);
 
         foreach ([

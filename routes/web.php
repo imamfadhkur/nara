@@ -51,6 +51,8 @@ Route::middleware(['auth', 'two-factor'])
 
         // Outputs (D-16, Bagian 5.4 & 9.8)
         Route::resource('outputs', OutputController::class)->only(['index', 'store', 'destroy']);
+        Route::get('outputs/{output}/download/{file}', [OutputController::class, 'downloadFile'])->name('outputs.download');
+        Route::get('outputs/{output}/view/{file}', [OutputController::class, 'viewFile'])->name('outputs.view');
 
         Route::post('tasks/{task}/subtasks', [TaskController::class, 'storeSubtask'])
             ->name('tasks.subtasks.store');

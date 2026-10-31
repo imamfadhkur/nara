@@ -66,7 +66,7 @@ class TodayController extends Controller
 
         $recentOutputs = Output::query()
             ->where('user_id', $user->id)
-            ->with(['project'])
+            ->with(['project', 'files'])
             ->orderByDesc('produced_at')
             ->orderByDesc('id')
             ->limit(4)

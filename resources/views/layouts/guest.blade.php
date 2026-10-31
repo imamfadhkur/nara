@@ -17,8 +17,8 @@
     <body class="font-sans text-gray-900 antialiased">
         <div class="min-h-screen flex flex-col sm:justify-center items-center pt-6 sm:pt-0 bg-gray-100">
             <div>
-                <a href="/">
-                    <x-application-logo class="w-20 h-20 fill-current text-gray-500" />
+                <a href="/" class="block p-3 bg-[#0b192c] rounded-2xl shadow-md border border-slate-800">
+                    <x-application-logo class="w-auto h-12 object-contain" />
                 </a>
             </div>
 

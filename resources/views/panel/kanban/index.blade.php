@@ -103,7 +103,7 @@
 
                 <p class="text-xs text-slate-600 font-medium bg-slate-50 p-2 rounded-lg border border-slate-200/60" x-text="activeTaskTitle"></p>
 
-                <form :action="'{{ url('panel/kanban/tasks') }}/' + activeTaskId + '/move'" method="POST" class="space-y-4 text-sm">
+                <form :action="'{{ url('panel/kanban/tasks') }}/' + activeTaskId + '/move'" method="POST" enctype="multipart/form-data" class="space-y-4 text-sm">
                     @csrf
                     <x-form-field name="status" label="Pilih Status Baru" :required="true">
                         <select name="status" x-model="targetStatus" class="nara-input">
@@ -149,6 +149,11 @@
                                     <label class="block text-[11px] font-medium text-slate-700 mb-0.5">Tautan Bukti (URL)</label>
                                     <input type="url" name="evidence_url" placeholder="https://github.com/... atau deliverable"
                                            class="nara-input bg-white text-xs py-1">
+                                </div>
+                                <div>
+                                    <label class="block text-[11px] font-medium text-slate-700 mb-0.5">Unggah Berkas Bukti (File Upload)</label>
+                                    <input type="file" name="output_file"
+                                           class="w-full text-xs text-slate-600 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-white file:text-sky-700 hover:file:bg-slate-100 border border-slate-300 rounded-lg p-1 bg-white cursor-pointer">
                                 </div>
                             </div>
                         </div>

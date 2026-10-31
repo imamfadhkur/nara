@@ -21,19 +21,9 @@
         :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
         class="fixed inset-y-0 left-0 z-40 w-64 flex flex-col bg-[#0b192c] text-slate-200 transition-transform duration-200 lg:static lg:translate-x-0"
     >
-        <div class="flex items-center justify-between px-5 h-16 border-b border-slate-800">
-            <a href="{{ route('panel.projects.index') }}" class="flex items-center gap-2.5">
-                {{-- Logo Human–AI Connection: node + garis koneksi + orbit (Bagian 5.1) --}}
-                <svg class="h-7 w-7 text-cyan-400" viewBox="0 0 32 32" fill="none" aria-hidden="true">
-                    <circle cx="16" cy="16" r="12" stroke="currentColor" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.6"/>
-                    <line x1="10" y1="20" x2="22" y2="11" stroke="#a78bfa" stroke-width="2"/>
-                    <circle cx="10" cy="20" r="3.5" fill="#38bdf8"/>
-                    <circle cx="22" cy="11" r="3.5" fill="#a78bfa"/>
-                </svg>
-                <div>
-                    <span class="text-base font-bold tracking-wide text-white">NARA</span>
-                    <span class="block text-[10px] text-cyan-300/80 leading-none">Personal AI Agent · v0.5</span>
-                </div>
+        <div class="flex items-center justify-between px-4 h-16 border-b border-slate-800">
+            <a href="{{ route('panel.today') }}" class="flex items-center group py-1">
+                <img src="{{ asset('images/nara-2.png') }}" alt="NARA AI" class="h-10 w-auto max-w-[190px] object-contain transition-transform group-hover:scale-[1.02]">
             </a>
             <button type="button" @click="sidebarOpen = false" class="lg:hidden text-slate-400 hover:text-white">✕</button>
         </div>

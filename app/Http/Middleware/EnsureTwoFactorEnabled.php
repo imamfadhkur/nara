@@ -7,16 +7,15 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Pastikan 2FA TOTP sudah dikonfirmasi pada pengguna (Bagian 13.1).
- *
- * Dikecualikan untuk rute penyetelan 2FA di Settings/Keamanan agar pengguna baru
- * dapat memindai QR pertama kali tanpa terkunci.
+ * Pastikan 2FA TOTP sudah dikonfirmasi bila NARA_REQUIRE_2FA diaktifkan.
+ * Bila false (default), 2FA merupakan fitur tambahan opsional dan pengguna
+ * bebas mengakses serta mengedit seluruh fitur panel tanpa terkunci.
  */
 class EnsureTwoFactorEnabled
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (! config('nara.require_two_factor', true)) {
+        if (! config('nara.require_two_factor', false)) {
             return $next($request);
         }
 
