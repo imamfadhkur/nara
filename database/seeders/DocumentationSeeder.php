@@ -13,6 +13,130 @@ class DocumentationSeeder extends Seeder
     {
         $articles = [
             [
+                'category' => 'release_notes',
+                'category_name' => 'Catatan Rilis & Pembaruan Sistem',
+                'title' => 'Catatan Rilis NARA v2.0 (Fase 2) — Apa yang Baru?',
+                'slug' => 'catatan-rilis-nara-v2-fase-2',
+                'icon' => '🚀',
+                'sort_order' => 0,
+                'is_published' => true,
+                'last_updated_by' => 'Imam Fadhkur',
+                'excerpt' => 'Daftar lengkap fitur baru, penyempurnaan sistem, integrasi dinamis, dan optimasi alur kerja pada NARA Versi 2.0 (Fase 2).',
+                'content' => <<<'MARKDOWN'
+# Catatan Rilis NARA v2.0 (Fase 2) — Apa yang Baru?
+
+Selamat datang di **NARA Versi 2.0 (Fase 2)**! Pembaruan besar ini menghadirkan lompatan signifikan dalam integrasi eksternal, manajemen fokus hening, visualisasi prioritas strategis, pelacakan hasil karya nyata, hingga pengelolaan basis pengetahuan mandiri.
+
+Seluruh kapabilitas baru dirancang dengan arsitektur deterministik, aman, dan dapat dikendalikan secara dinamis tanpa perlu menyentuh konfigurasi server atau berkas `.env`.
+
+---
+
+## 🌟 Ikhtisar Pembaruan Utama (Fase 2)
+
+```text
+[ NARA Personal Agent v2.0 ]
+  ├── 📅 Google Calendar Dua Arah (OAuth 2.0 & Isolasi Kalender NARA)
+  ├── 🤖 Telegram Bot Pintar (Briefing Pagi, Reminder Sesi, & Quick Command)
+  ├── ⏱️ Mode Fokus (Timer Pomodoro 25m, Deep Work 45m, Sprint 15m)
+  ├── 🧭 Matrix Eisenhower Cerdas (4 Kuadran Prioritas & Waiting List)
+  ├── 🗺️ Roadmap & Timeline Progres Horizon
+  ├── 📊 Weekly Review Mingguan (Refleksi & Top 3 Prioritas ≤15m)
+  ├── 🏆 Outputs (Hasil Karya) & Unggah Berkas Bukti (File Upload)
+  ├── 📚 Knowledge Base & Dokumentasi Mandiri (CRUD Dinamis di Database)
+  └── 🎨 Sidebar Fleksibel (Tombol Sembunyikan/Tampilkan Menu Fokus)
+```
+
+---
+
+## 1. 📅 Integrasi Google Calendar Dua Arah & Deteksi Konflik
+
+- **Prinsip NARA Authoritative**: NARA menjadi *single source of truth* untuk seluruh jadwal sesi fokus dan tugas Anda, yang disinkronkan secara mulus ke Google Calendar.
+- **Isolasi Kalender "NARA"**: Menjaga privasi Anda dengan otomatis membuat kalender sekunder khusus bernama `NARA` di akun Google Anda, tanpa mencampuradukkan dengan kalender pribadi Anda (Personal, Birthday, Keluarga).
+- **Deteksi Bentrok Jadwal (Read-Only Busy Blocks)**: Agenda pribadi Anda otomatis dibaca sebagai blok sibuk *read-only*. NARA akan memperingatkan bentrok waktu jika Anda menjadwalkan tugas pada jam yang sudah terisi.
+- **Dynamic Rule Switch**: Fitur sinkronisasi kalender dapat dinyalakan/dimatikan sewaktu-waktu melalui tombol di menu **Settings & Integrasi**. Jika dinonaktifkan, NARA berjalan 100% dalam **Mode Lokal (🏠)** tanpa dependensi eksternal.
+
+---
+
+## 2. 🤖 Integrasi Telegram Bot & Notifikasi Proaktif
+
+- **Pengiriman Pesan Dua Arah & Komando Cepat**: Mendukung tangkapan cepat tugas dan ide langsung dari obrolan Telegram melalui perintah `/add`, `/idea`, `/tasks`, dan `/done`.
+- **Briefing Pagi Otomatis**: Ringkasan jadwal hari ini, kuota kapasitas kerja, dan daftar tugas prioritas dikirimkan setiap pagi ke akun Telegram Anda via scheduler `nara:briefing`.
+- **Pengingat Sesi Terjadwal (Remind)**: Pengingat cerdas otomatis dikirimkan 10 menit sebelum sesi fokus dimulai melalui scheduler `nara:remind`.
+- **Uji Coba Langsung di Panel**: Tersedia tombol instan **Kirim Briefing Pagi** dan **Kirim Reminder Jadwal** di menu Settings untuk verifikasi koneksi tanpa menunggu jam scheduler.
+- **Dynamic Rule Switch**: Integrasi Telegram dapat diaktifkan/dinonaktifkan langsung dari database via panel pengaturan tanpa perlu mengedit `.env`.
+
+---
+
+## 3. ⏱️ Mode Fokus (Deep Work Timer)
+
+- **4 Pilihan Mode Kerja Hening**:
+  - 🍅 **25 Menit (Pomodoro)**: Siklus kerja fokus klasik dengan interval istirahat.
+  - 🧠 **45 Menit (Deep Work)**: Sesi konsentrasi mendalam untuk penyelesaian masalah kompleks.
+  - ⏳ **60 Menit (Full Session)**: Blok waktu intensif untuk penulisan karya atau riset.
+  - ⚡ **15 Menit (Sprint)**: Eksekusi kilat tugas-tugas administratif ringan.
+- **Pencatatan Waktu Otomatis**: Durasi waktu yang dihabiskan otomatis diakumulasikan ke atribut `actual_minutes` pada tugas yang sedang dikerjakan.
+- **Histori Sesi Fokus**: Riwayat pengerjaan sesi fokus harian tercatat rapi untuk evaluasi produktivitas harian.
+
+---
+
+## 4. 🧭 Matrix Eisenhower 4 Kuadran Cerdas
+
+- Pengelompokan tugas otomatis berdasarkan tingkat kepentingan dan kedaruratan:
+  1. 🔴 **Kuadran 1: Lakukan Segera (Do First)** — Tugas mendesak dan bernilai tinggi.
+  2. 🔵 **Kuadran 2: Jadwalkan (Schedule)** — Tugas penting strategis jangka panjang tanpa tekanan waktu mendesak.
+  3. 🟡 **Kuadran 3: Delegasikan (Delegate)** — Tugas mendesak yang memiliki urgensi waktu namun dampak langsungnya rendah.
+  4. ⚪ **Kuadran 4: Singkirkan / Backlog (Don't Do)** — Tugas yang dapat ditunda atau dievaluasi ulang.
+- **Waiting List Section**: Menampung tugas yang sedang tertahan dependensi pihak luar lengkap dengan alasan penundaan (*waiting reason*).
+
+---
+
+## 5. 🗺️ Roadmap & Timeline Progres Horizon
+
+- Visualisasi progres jangka panjang seluruh project aktif berdasarkan horizon waktu.
+- Pemantauan status milestone, tenggat waktu, dan persentase penyelesaian secara komprehensif untuk memastikan target jangka menengah (*Goals*) tercapai sesuai rencana.
+
+---
+
+## 6. 📊 Weekly Review (Ritual Mingguan ≤ 15 Menit)
+
+- Ritual evaluasi terstruktur di akhir pekan untuk membersihkan *inbox*, merefleksikan capaian, dan menentukan **Top 3 Prioritas Utama** untuk minggu mendatang.
+- Memastikan tidak ada tugas penting yang terlewat dan menjaga beban kerja tetap dalam batas kapasitas (*WIP Guard*).
+
+---
+
+## 7. 🏆 Outputs (Hasil Karya) & Unggah Berkas Bukti (File Upload)
+
+- Berlandaskan prinsip **D-16**: Nilai produktivitas diukur dari karya nyata (*deliverables*) yang dihasilkan, bukan sekadar daftar centang tugas.
+- **Unggah Berkas Bukti Nyata**: Tersedia fitur upload file langsung pada dialog *Catat Bukti Output* di halaman detail task maupun menu Outputs.
+- Mendukung berbagai format berkas: PDF laporan, dokumen Word/Excel, gambar/screenshot, arsip ZIP, hingga kode sumber (maksimal 25 MB per berkas).
+
+---
+
+## 8. 📚 Basis Pengetahuan & Dokumentasi Mandiri (Database-Driven)
+
+- Seluruh artikel panduan, dokumentasi API, dan troubleshooting kini disimpan di tabel database dan dapat dikelola secara mandiri oleh user/admin.
+- **Tabel Kategori Terstruktur**: Pemilihan kategori artikel menggunakan dropdown tabel resmi (`documentation_categories`) tanpa perlu menebak-nebak nama kategori.
+- **Pembuatan Kategori Dinamis**: Mendukung pembuatan kategori baru secara instan langsung dari formulir pembuatan artikel.
+- **Tombol Edit & Hapus Kategori**: Dilengkapi tombol aksi langsung pada header grup, banner filter, serta modal manajemen kategori yang responsif (mendukung scroll vertikal dan horizontal lancar).
+
+---
+
+## 9. 🎨 Navigasi Fleksibel & Desain Antarmuka Baru
+
+- **Tombol Sembunyikan / Tampilkan Menu Sidebar**: Memungkinkan Anda menyembunyikan sidebar navigasi untuk beralih ke *Mode Fokus Penuh* pada layar konten.
+- **Pewarnaan Kontras Panel**: Latar belakang panel navigasi gelap dengan tipografi tajam dan hierarki visual yang jelas.
+- **Penomoran Versi & Catatan Rilis**: Penomoran versi dan fase diletakkan elegan di panel bawah (pada area copyright) yang dapat diklik langsung untuk membaca dokumentasi ini.
+
+---
+
+## 10. 🛡️ Keamanan & Pemeliharaan Mandiri
+
+- **Autentikasi Dua Langkah (2FA TOTP)**: Kompatibel dengan Google Authenticator, Aegis, Bitwarden, dll., lengkap dengan kode pemulihan darurat (*recovery codes*).
+- **Enkripsi Kredensial**: Seluruh access token dan rahasia integrasi dienkripsi menggunakan algoritma `AES-256-CBC`.
+- **Pencadangan Mandiri**: Perintah CLI `php artisan nara:backup` untuk membuat cadangan database secara instan ke direktori `storage/app/backups/`.
+MARKDOWN
+            ],
+            [
                 'category' => 'google_calendar',
                 'category_name' => 'Integrasi Google Calendar',
                 'title' => 'Panduan Lengkap Konfigurasi Google Calendar (Lokal hingga Production)',

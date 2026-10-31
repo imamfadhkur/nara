@@ -219,3 +219,21 @@ test('can create, update, and delete documentation category with article synchro
     expect(DocumentationArticle::where('id', $article->id)->exists())->toBeTrue();
 });
 
+test('panel renders version numbering in copyright area linked to release notes documentation', function () {
+    $user = User::factory()->create();
+
+    // Pastikan halaman panel memuat link dan numbering versi
+    $panelResponse = $this->actingAs($user)->get(route('panel.today'));
+    $panelResponse->assertOk();
+    $panelResponse->assertSee('v2.0 · Fase 2');
+    $panelResponse->assertSee(route('panel.docs.show', 'catatan-rilis-nara-v2-fase-2'));
+
+    // Pastikan halaman dokumentasi rilis bisa diakses dan merender konten apa yang baru
+    $docsResponse = $this->actingAs($user)->get(route('panel.docs.show', 'catatan-rilis-nara-v2-fase-2'));
+    $docsResponse->assertOk();
+    $docsResponse->assertSee('Catatan Rilis NARA v2.0 (Fase 2)');
+    $docsResponse->assertSee('Ikhtisar Pembaruan Utama (Fase 2)');
+    $docsResponse->assertSee('Integrasi Google Calendar Dua Arah');
+    $docsResponse->assertSee('Mode Fokus (Deep Work Timer)');
+});
+

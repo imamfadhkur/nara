@@ -153,15 +153,24 @@
             @endforeach
         </nav>
 
-        <div class="p-4 border-t border-slate-800 bg-[#081322] text-xs text-slate-400 flex items-center justify-between gap-2">
-            <div class="min-w-0">
-                <div class="truncate">🕒 Zona: {{ auth()->user()?->displayTimezone() }}</div>
-                <div class="truncate text-[10px] text-slate-500 mt-0.5">© {{ date('Y') }} PT Imfar Manggala Nara</div>
+        <div class="p-3.5 border-t border-slate-800 bg-[#081322] text-xs text-slate-400 space-y-2">
+            <div class="flex items-center justify-between gap-2">
+                <div class="truncate text-[11px] text-slate-300">🕒 Zona: {{ auth()->user()?->displayTimezone() }}</div>
+                <form method="POST" action="{{ route('logout') }}">
+                    @csrf
+                    <button type="submit" class="shrink-0 rounded-lg px-2.5 py-1 bg-slate-800 text-slate-300 hover:bg-rose-600 hover:text-white transition text-[11px] font-medium">Keluar</button>
+                </form>
             </div>
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit" class="shrink-0 rounded-lg px-2.5 py-1.5 bg-slate-800 text-slate-200 hover:bg-rose-600 hover:text-white transition">Keluar</button>
-            </form>
+            <div class="pt-2 border-t border-slate-800/80 flex items-center justify-between gap-2 text-[10px]">
+                <span class="truncate text-slate-500">© {{ date('Y') }} PT Imfar Manggala Nara</span>
+                <a href="{{ route('panel.docs.show', 'catatan-rilis-nara-v2-fase-2') }}"
+                   class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full font-mono font-bold bg-cyan-950/90 text-cyan-300 border border-cyan-800/80 hover:bg-cyan-900 hover:text-cyan-100 hover:border-cyan-400 transition group shrink-0"
+                   title="Lihat Apa yang Baru di NARA v2.0 (Fase 2)">
+                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>v2.0 · Fase 2</span>
+                    <span class="text-[9px] opacity-70 group-hover:translate-x-0.5 transition">→</span>
+                </a>
+            </div>
         </div>
     </aside>
 
@@ -217,6 +226,24 @@
 
             {{ $slot }}
         </main>
+
+        {{-- Footer Bawah Panel (Copyright & Numbering Versi/Fase Tertaut Dokumentasi) --}}
+        <footer class="mt-auto py-3.5 px-4 sm:px-6 lg:px-8 border-t border-slate-200/80 bg-white/70 text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div>
+                © {{ date('Y') }} PT Imfar Manggala Nara. All rights reserved.
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-[11px] text-slate-400">Versi & Rilis:</span>
+                <a href="{{ route('panel.docs.show', 'catatan-rilis-nara-v2-fase-2') }}"
+                   class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-mono font-semibold bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100 hover:text-sky-900 hover:border-sky-300 transition group shadow-2xs"
+                   title="Klik untuk membaca detail apa yang baru pada versi dan fase ini">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="font-bold">v2.0 · Fase 2</span>
+                    <span class="text-slate-400 text-[11px] font-sans group-hover:text-slate-600">(Apa yang baru?)</span>
+                    <span class="text-sky-600 group-hover:translate-x-0.5 transition">→</span>
+                </a>
+            </div>
+        </footer>
     </div>
 </div>
 @stack('scripts')
