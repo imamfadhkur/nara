@@ -53,12 +53,17 @@ class DocumentationController extends Controller
 
         $groupedArticles = $articles->groupBy(fn ($item) => $item->category_name);
 
+        $activeCategoryObj = $categoryParam !== ''
+            ? $allCategories->first(fn ($c) => $c->slug === $categoryParam || (string) $c->id === $categoryParam)
+            : null;
+
         return view('panel.docs.index', [
             'articles' => $articles,
             'groupedArticles' => $groupedArticles,
             'allCategories' => $allCategories,
             'search' => $search,
             'selectedCategory' => $categoryParam,
+            'activeCategoryObj' => $activeCategoryObj,
             'totalCount' => DocumentationArticle::count(),
         ]);
     }
@@ -196,6 +201,95 @@ class DocumentationController extends Controller
 
         return redirect()->route('panel.docs.index')
             ->with('status', "Artikel \"{$title}\" berhasil dihapus.");
+    }
+
+    /**
+     * Tambah kategori baru dari modal / panel kelola kategori.
+     */
+    public function storeCategory(Request $request): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:128',
+            'slug' => 'nullable|string|max:128|unique:documentation_categories,slug',
+            'icon' => 'nullable|string|max:16',
+            'description' => 'nullable|string|max:500',
+            'sort_order' => 'nullable|integer|min:0|max:9999',
+        ]);
+
+        $name = trim($data['name']);
+        $slug = ! empty($data['slug']) ? Str::slug($data['slug']) : Str::slug($name);
+
+        $baseSlug = $slug;
+        $counter = 1;
+        while (DocumentationCategory::where('slug', $slug)->exists()) {
+            $slug = "{$baseSlug}-{$counter}";
+            $counter++;
+        }
+
+        $category = DocumentationCategory::create([
+            'name' => $name,
+            'slug' => $slug,
+            'icon' => ! empty($data['icon']) ? $data['icon'] : '📁',
+            'description' => $data['description'] ?? null,
+            'sort_order' => (int) ($data['sort_order'] ?? ((DocumentationCategory::max('sort_order') ?? 0) + 1)),
+        ]);
+
+        return redirect()->route('panel.docs.index')
+            ->with('status', "Kategori \"{$category->name}\" berhasil ditambahkan.");
+    }
+
+    /**
+     * Update kategori yang sudah ada.
+     */
+    public function updateCategory(Request $request, DocumentationCategory $category): RedirectResponse
+    {
+        $data = $request->validate([
+            'name' => 'required|string|max:128',
+            'slug' => ['nullable', 'string', 'max:128', Rule::unique('documentation_categories', 'slug')->ignore($category->id)],
+            'icon' => 'nullable|string|max:16',
+            'description' => 'nullable|string|max:500',
+            'sort_order' => 'nullable|integer|min:0|max:9999',
+        ]);
+
+        $name = trim($data['name']);
+        $slug = ! empty($data['slug']) ? Str::slug($data['slug']) : Str::slug($name);
+
+        $category->update([
+            'name' => $name,
+            'slug' => $slug,
+            'icon' => ! empty($data['icon']) ? $data['icon'] : '📁',
+            'description' => $data['description'] ?? null,
+            'sort_order' => (int) ($data['sort_order'] ?? $category->sort_order),
+        ]);
+
+        // Sinkronisasi data denormalisasi artikel terkait agar konsisten
+        DocumentationArticle::where('documentation_category_id', $category->id)->update([
+            'category' => $category->slug,
+            'category_name' => $category->name,
+        ]);
+
+        return redirect()->route('panel.docs.index')
+            ->with('status', "Kategori \"{$category->name}\" berhasil diperbarui.");
+    }
+
+    /**
+     * Hapus kategori dari database dan lepaskan relasi pada artikel terkait.
+     */
+    public function destroyCategory(DocumentationCategory $category): RedirectResponse
+    {
+        $name = $category->name;
+
+        // Pindahkan artikel yang terkait ke fallback agar aman dan tidak terputus
+        DocumentationArticle::where('documentation_category_id', $category->id)->update([
+            'documentation_category_id' => null,
+            'category' => 'general',
+            'category_name' => 'Umum',
+        ]);
+
+        $category->delete();
+
+        return redirect()->route('panel.docs.index')
+            ->with('status', "Kategori \"{$name}\" berhasil dihapus.");
     }
 
     /**

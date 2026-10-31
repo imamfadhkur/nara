@@ -156,3 +156,66 @@ test('can link documentation to existing category from table and create new cate
     $articleNew = DocumentationArticle::where('slug', 'panduan-kategori-baru')->first();
     expect($articleNew->documentation_category_id)->toBe($newCategory->id);
 });
+
+test('can create, update, and delete documentation category with article synchronization', function () {
+    $user = User::factory()->create(['name' => 'Imam Admin']);
+
+    // 1. Create category
+    $createResponse = $this->actingAs($user)->post(route('panel.docs.categories.store'), [
+        'name' => 'Kategori Riset & Paper',
+        'icon' => '🔬',
+        'description' => 'Panduan penulisan riset dan publikasi jurnal',
+        'sort_order' => 15,
+    ]);
+
+    $createResponse->assertRedirect(route('panel.docs.index'));
+    $category = \App\Models\DocumentationCategory::where('name', 'Kategori Riset & Paper')->first();
+    expect($category)->not->toBeNull();
+    expect($category->icon)->toBe('🔬');
+    expect($category->slug)->toBe('kategori-riset-paper');
+
+    // Buat artikel yang tertaut ke kategori ini
+    $article = DocumentationArticle::create([
+        'documentation_category_id' => $category->id,
+        'category' => $category->slug,
+        'category_name' => $category->name,
+        'title' => 'Panduan LaTeX & BibTeX',
+        'slug' => 'panduan-latex-bibtex',
+        'icon' => '📄',
+        'excerpt' => 'Ringkasan panduan LaTeX.',
+        'content' => 'Isi panduan lengkap LaTeX.',
+        'sort_order' => 1,
+        'is_published' => true,
+    ]);
+
+    // 2. Update category
+    $updateResponse = $this->actingAs($user)->put(route('panel.docs.categories.update', $category), [
+        'name' => 'Riset Akademik & Publikasi',
+        'icon' => '📚',
+        'description' => 'Deskripsi diperbarui',
+        'sort_order' => 3,
+    ]);
+
+    $updateResponse->assertRedirect(route('panel.docs.index'));
+    $category->refresh();
+    expect($category->name)->toBe('Riset Akademik & Publikasi');
+    expect($category->icon)->toBe('📚');
+
+    // Pastikan artikel tersinkronisasi
+    $article->refresh();
+    expect($article->category_name)->toBe('Riset Akademik & Publikasi');
+    expect($article->category)->toBe('riset-akademik-publikasi');
+
+    // 3. Delete category
+    $deleteResponse = $this->actingAs($user)->delete(route('panel.docs.categories.destroy', $category));
+
+    $deleteResponse->assertRedirect(route('panel.docs.index'));
+    expect(\App\Models\DocumentationCategory::where('id', $category->id)->exists())->toBeFalse();
+
+    // Artikel tetap ada dan aman dengan kategori fallback
+    $article->refresh();
+    expect($article->documentation_category_id)->toBeNull();
+    expect($article->category_name)->toBe('Umum');
+    expect(DocumentationArticle::where('id', $article->id)->exists())->toBeTrue();
+});
+

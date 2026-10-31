@@ -98,6 +98,12 @@ Route::middleware(['auth', 'two-factor'])
         Route::get('docs', [DocumentationController::class, 'index'])->name('docs.index');
         Route::get('docs/create', [DocumentationController::class, 'create'])->name('docs.create');
         Route::post('docs', [DocumentationController::class, 'store'])->name('docs.store');
+
+        // Manajemen Kategori Dokumentasi
+        Route::post('docs/categories', [DocumentationController::class, 'storeCategory'])->name('docs.categories.store');
+        Route::put('docs/categories/{category}', [DocumentationController::class, 'updateCategory'])->name('docs.categories.update');
+        Route::delete('docs/categories/{category}', [DocumentationController::class, 'destroyCategory'])->name('docs.categories.destroy');
+
         Route::get('docs/{article:slug}', [DocumentationController::class, 'show'])->name('docs.show');
         Route::get('docs/{article}/edit', [DocumentationController::class, 'edit'])->name('docs.edit');
         Route::put('docs/{article}', [DocumentationController::class, 'update'])->name('docs.update');
