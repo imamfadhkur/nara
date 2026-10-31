@@ -191,7 +191,168 @@
             </div>
         </div>
 
-        {{-- Bagian 2: Uji Coba Notifikasi & Reminder Telegram --}}
+        {{-- Bagian 2: Manajemen Integrasi Eksternal & Aturan Dinamis (Fase 2) --}}
+        <div id="integrations" class="nara-card p-6 border-l-4 border-sky-600">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
+                <div>
+                    <h2 class="text-base font-semibold text-slate-900 flex items-center gap-2">
+                        <span>🔌 Manajemen Integrasi Eksternal (Fase 2)</span>
+                    </h2>
+                    <p class="text-xs text-slate-500 mt-0.5">
+                        Konfigurasi dinamis berbasis database untuk Telegram dan Google Calendar. Atur on/off rule tanpa wajib menyentuh file .env.
+                    </p>
+                </div>
+            </div>
+
+            <div class="pt-5 space-y-6">
+                {{-- Integrasi 1: Telegram Bot --}}
+                <div class="p-4 rounded-xl border {{ $isTelegramEnabled ? 'border-sky-300 bg-sky-50/30' : 'border-slate-200 bg-slate-50/50' }}">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-200/80">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">🤖</span>
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-900">Telegram Bot Integration</h3>
+                                <p class="text-xs text-slate-500">Capture cepat inbox, brief harian, reminder jadwal, dan perintah /done.</p>
+                            </div>
+                        </div>
+                        <div>
+                            @if ($isTelegramEnabled)
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                                    <span class="h-2 w-2 rounded-full bg-emerald-600 animate-pulse"></span>
+                                    Aktif (Rules On)
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-200 text-slate-700">
+                                    Nonaktif (Dormant)
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ route('panel.settings.integrations.telegram') }}" class="space-y-4">
+                        @csrf
+                        <div class="flex items-center gap-2 mb-3">
+                            <input type="checkbox" id="telegram_active" name="is_active" value="1"
+                                   @checked($isTelegramEnabled)
+                                   class="rounded border-slate-300 text-sky-600 focus:ring-sky-500">
+                            <label for="telegram_active" class="text-xs font-semibold text-slate-800 cursor-pointer">
+                                Aktifkan Integrasi Telegram (Rule Switch)
+                            </label>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Bot Token</label>
+                                <input type="password" name="bot_token"
+                                       value="{{ old('bot_token', $telegramConfig['bot_token']) }}"
+                                       placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
+                                       class="w-full text-xs font-mono rounded-lg border-slate-300 py-1.5 px-2.5 focus:border-sky-500">
+                                <span class="text-[11px] text-slate-400">Dari @BotFather di Telegram</span>
+                            </div>
+
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Chat ID (User Allowlist)</label>
+                                <input type="text" name="chat_id"
+                                       value="{{ old('chat_id', $telegramConfig['chat_id']) }}"
+                                       placeholder="969666384"
+                                       class="w-full text-xs font-mono rounded-lg border-slate-300 py-1.5 px-2.5 focus:border-sky-500">
+                                <span class="text-[11px] text-slate-400">ID akun Telegram pribadi Anda</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2">
+                            <span class="text-[11px] text-slate-500 italic">
+                                *Jika dinonaktifkan: bot tidak mengirim briefing/reminder dan webhook luar ditolak dengan aman.
+                            </span>
+                            <button type="submit" class="nara-btn-primary text-xs py-1.5 px-3">
+                                Simpan Telegram Config
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                {{-- Integrasi 2: Google Calendar (Fase 2) --}}
+                <div class="p-4 rounded-xl border {{ $isGoogleEnabled ? 'border-emerald-300 bg-emerald-50/30' : 'border-slate-200 bg-slate-50/50' }}">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3 border-b border-slate-200/80">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">📅</span>
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-900">Google Calendar Integration</h3>
+                                <p class="text-xs text-slate-500">Sinkronisasi jadwal sesi fokus, deteksi konflik, dan NARA-authoritative mirror.</p>
+                            </div>
+                        </div>
+                        <div>
+                            @if ($isGoogleEnabled)
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
+                                    <span class="h-2 w-2 rounded-full bg-emerald-600 animate-pulse"></span>
+                                    Aktif (Rules On)
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-200 text-slate-700">
+                                    Mode Lokal (🏠 Off)
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <form method="POST" action="{{ route('panel.settings.integrations.google') }}" class="space-y-4">
+                        @csrf
+                        <div class="flex items-center gap-2 mb-3">
+                            <input type="checkbox" id="google_active" name="is_active" value="1"
+                                   @checked($isGoogleEnabled)
+                                   class="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500">
+                            <label for="google_active" class="text-xs font-semibold text-slate-800 cursor-pointer">
+                                Aktifkan Sinkronisasi Google Calendar (Rule Switch)
+                            </label>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Google Client ID</label>
+                                <input type="text" name="client_id"
+                                       value="{{ old('client_id', $googleConfig['client_id']) }}"
+                                       placeholder="123456...apps.googleusercontent.com"
+                                       class="w-full text-xs font-mono rounded-lg border-slate-300 py-1.5 px-2.5 focus:border-sky-500">
+                            </div>
+
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Google Client Secret</label>
+                                <input type="password" name="client_secret"
+                                       value="{{ old('client_secret', $googleConfig['client_secret']) }}"
+                                       placeholder="GOCSPX-..."
+                                       class="w-full text-xs font-mono rounded-lg border-slate-300 py-1.5 px-2.5 focus:border-sky-500">
+                            </div>
+
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Nama Kalender Terdedikasi</label>
+                                <input type="text" name="calendar_id"
+                                       value="{{ old('calendar_id', $googleConfig['calendar_id']) }}"
+                                       placeholder="NARA"
+                                       class="w-full text-xs rounded-lg border-slate-300 py-1.5 px-2.5 focus:border-sky-500">
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2">
+                            <span class="text-[11px] text-slate-500 italic">
+                                *Jika dinonaktifkan: Kalender berjalan 100% lokal tanpa dependensi eksternal, bebas error.
+                            </span>
+                            <div class="flex items-center gap-2">
+                                @if ($isGoogleEnabled)
+                                    <a href="{{ route('panel.calendar.index') }}" class="nara-btn-secondary text-xs py-1.5 px-3">
+                                        Buka Kalender →
+                                    </a>
+                                @endif
+                                <button type="submit" class="nara-btn-primary text-xs py-1.5 px-3">
+                                    Simpan Google Config
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {{-- Bagian 3: Uji Coba Notifikasi & Reminder Telegram --}}
         <div class="nara-card p-6 border-l-4 border-indigo-500">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>

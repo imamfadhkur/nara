@@ -105,6 +105,30 @@ class User extends Authenticatable
         return $this->hasMany(Notification::class);
     }
 
+    /** @return HasMany<Integration, $this> */
+    public function integrations(): HasMany
+    {
+        return $this->hasMany(Integration::class);
+    }
+
+    /** @return HasMany<WeeklyReview, $this> */
+    public function weeklyReviews(): HasMany
+    {
+        return $this->hasMany(WeeklyReview::class)->orderByDesc('week_start');
+    }
+
+    /** @return HasMany<FocusSession, $this> */
+    public function focusSessions(): HasMany
+    {
+        return $this->hasMany(FocusSession::class)->orderByDesc('started_at');
+    }
+
+    /** @return HasMany<BusyBlock, $this> */
+    public function busyBlocks(): HasMany
+    {
+        return $this->hasMany(BusyBlock::class);
+    }
+
     public function hasTwoFactorEnabled(): bool
     {
         return ! is_null($this->two_factor_secret) && ! is_null($this->two_factor_confirmed_at);

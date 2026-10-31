@@ -11,7 +11,10 @@ use Illuminate\Support\Carbon;
 
 class ScheduleService
 {
-    public function __construct(private readonly ActivityLogger $logger) {}
+    public function __construct(
+        private readonly ActivityLogger $logger,
+        private readonly GoogleCalendarSyncService $calendarSync,
+    ) {}
 
     public function create(Task $task, Carbon $startAt, Carbon $endAt, ?string $note = null, string $source = 'nara'): Schedule
     {
@@ -40,11 +43,15 @@ class ScheduleService
             'end_at' => $schedule->end_at->toIso8601String(),
         ]);
 
+        // Sinkronisasi otomatis ke Google Calendar / Local CalendarEvent (Fase 2)
+        $this->calendarSync->syncSchedule($schedule);
+
         return $schedule;
     }
 
     public function delete(Schedule $schedule): void
     {
+        $this->calendarSync->deleteScheduleEvent($schedule);
         $schedule->delete();
     }
 }

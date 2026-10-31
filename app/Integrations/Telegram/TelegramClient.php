@@ -2,6 +2,8 @@
 
 namespace App\Integrations\Telegram;
 
+use App\Domain\Integrations\IntegrationService;
+use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -14,6 +16,15 @@ class TelegramClient
     {
         $this->token = $token ?? config('nara.telegram.bot_token');
         $this->baseUrl = ($apiUrl ?? config('nara.telegram.api_url', 'https://api.telegram.org')) . '/bot' . $this->token;
+    }
+
+    public static function forUser(User $user): self
+    {
+        $service = app(IntegrationService::class);
+        $config = $service->getTelegramConfig($user);
+        $token = ! empty($config['bot_token']) ? $config['bot_token'] : null;
+
+        return new self($token);
     }
 
     public function isConfigured(): bool

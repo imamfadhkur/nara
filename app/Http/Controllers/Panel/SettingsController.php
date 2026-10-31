@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Panel;
 
 use App\Domain\Auth\TwoFactorAuthenticator;
+use App\Domain\Integrations\IntegrationService;
 use App\Domain\Notifications\NotificationService;
 use App\Domain\Settings\SettingService;
 use App\Http\Controllers\Controller;
@@ -14,13 +15,14 @@ use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 /**
- * Pengaturan NARA: kapasitas, WIP, zona waktu, allowlist Telegram, dan 2FA TOTP.
+ * Pengaturan NARA: kapasitas, WIP, zona waktu, integrasi eksternal (Fase 2), dan 2FA TOTP.
  */
 class SettingsController extends Controller
 {
     public function __construct(
         private readonly SettingService $settings,
         private readonly TwoFactorAuthenticator $twoFactor,
+        private readonly IntegrationService $integrations,
     ) {}
 
     public function index(Request $request): View
@@ -42,6 +44,10 @@ class SettingsController extends Controller
             'settings' => $values,
             'twoFactorSetup' => $setup,
             'recoveryCodes' => session('recovery_codes'),
+            'telegramConfig' => $this->integrations->getTelegramConfig($user),
+            'googleConfig' => $this->integrations->getGoogleCalendarConfig($user),
+            'isTelegramEnabled' => $this->integrations->isTelegramEnabled($user),
+            'isGoogleEnabled' => $this->integrations->isGoogleCalendarEnabled($user),
         ]);
     }
 
@@ -93,9 +99,91 @@ class SettingsController extends Controller
             ->with('toast', 'Pengaturan disimpan.');
     }
 
+    /**
+     * Simpan pengaturan integrasi Telegram dinamis ke database (Fase 2).
+     */
+    public function updateTelegramIntegration(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'is_active' => 'nullable|boolean',
+            'bot_token' => 'nullable|string|max:255',
+            'chat_id' => 'nullable|string|max:64',
+            'webhook_secret' => 'nullable|string|max:255',
+        ]);
+
+        $this->integrations->updateTelegram($user, [
+            'is_active' => $request->boolean('is_active'),
+            'bot_token' => $data['bot_token'] ?? '',
+            'chat_id' => $data['chat_id'] ?? '',
+            'webhook_secret' => $data['webhook_secret'] ?? '',
+        ]);
+
+        $statusStr = $request->boolean('is_active') ? 'diaktifkan' : 'dinonaktifkan';
+
+        return redirect()
+            ->route('panel.settings.index')
+            ->with('toast', "Pengaturan integrasi Telegram berhasil diperbarui ({$statusStr}).");
+    }
+
+    /**
+     * Simpan pengaturan integrasi Google Calendar dinamis ke database (Fase 2).
+     */
+    public function updateGoogleIntegration(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+
+        $data = $request->validate([
+            'is_active' => 'nullable|boolean',
+            'client_id' => 'nullable|string|max:255',
+            'client_secret' => 'nullable|string|max:255',
+            'calendar_id' => 'nullable|string|max:255',
+            'sync_mode' => 'nullable|string|in:two_way,one_way,read_only',
+        ]);
+
+        $this->integrations->updateGoogleCalendar($user, [
+            'is_active' => $request->boolean('is_active'),
+            'client_id' => $data['client_id'] ?? '',
+            'client_secret' => $data['client_secret'] ?? '',
+            'calendar_id' => $data['calendar_id'] ?? 'NARA',
+            'sync_mode' => $data['sync_mode'] ?? 'two_way',
+        ]);
+
+        $statusStr = $request->boolean('is_active') ? 'diaktifkan' : 'dinonaktifkan';
+
+        return redirect()
+            ->route('panel.settings.index')
+            ->with('toast', "Pengaturan integrasi Google Calendar berhasil diperbarui ({$statusStr}).");
+    }
+
+    /**
+     * Toggle cepat on/off integrasi pihak ketiga.
+     */
+    public function toggleIntegration(Request $request, string $provider): RedirectResponse
+    {
+        $user = $request->user();
+        abort_unless(in_array($provider, [IntegrationService::TELEGRAM, IntegrationService::GOOGLE_CALENDAR], true), 404);
+
+        $integration = $this->integrations->toggle($user, $provider);
+        $state = $integration->is_active ? 'diaktifkan' : 'dinonaktifkan';
+        $name = $provider === IntegrationService::TELEGRAM ? 'Telegram Bot' : 'Google Calendar';
+
+        return redirect()
+            ->route('panel.settings.index')
+            ->with('toast', "Integrasi {$name} berhasil {$state}.");
+    }
+
     public function testNotification(Request $request, NotificationService $notificationService): RedirectResponse
     {
         $user = $request->user();
+
+        if (! $this->integrations->isTelegramEnabled($user)) {
+            return redirect()
+                ->route('panel.settings.index')
+                ->with('toast', 'Gagal: Integrasi Telegram saat ini sedang dinonaktifkan.');
+        }
+
         if (empty($user->telegram_chat_id)) {
             return redirect()
                 ->route('panel.settings.index')
@@ -179,4 +267,3 @@ class SettingsController extends Controller
             ->with('toast', '2FA dinonaktifkan.');
     }
 }
-

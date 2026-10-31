@@ -3,6 +3,7 @@
 namespace App\Integrations\Telegram;
 
 use App\Domain\Capture\InboxService;
+use App\Domain\Integrations\IntegrationService;
 use App\Domain\Scheduling\CapacityService;
 use App\Domain\Tasks\TaskService;
 use App\Models\InboxItem;
@@ -22,6 +23,7 @@ class TelegramWebhookHandler
         private readonly InboxService $inbox,
         private readonly CapacityService $capacity,
         private readonly TaskService $tasks,
+        private readonly IntegrationService $integrations,
     ) {}
 
     /**
@@ -47,6 +49,13 @@ class TelegramWebhookHandler
         $user = User::where('telegram_chat_id', $chatId)->first();
         if (! $user) {
             Log::info("Telegram webhook diabaikan (chat_id {$chatId} tidak terdaftar di allowlist).");
+            return;
+        }
+
+        // 1b. Aturan Integrasi Aktif/Nonaktif (Fase 2)
+        if (! $this->integrations->isTelegramEnabled($user)) {
+            Log::info("Telegram webhook diabaikan: integrasi Telegram dinonaktifkan di pengaturan untuk user {$user->id}.");
+            $this->client->sendMessage($chatId, "⚠️ Integrasi Telegram saat ini sedang dinonaktifkan di menu Pengaturan NARA.");
             return;
         }
 

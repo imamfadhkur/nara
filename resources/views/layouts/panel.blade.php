@@ -34,11 +34,11 @@
             </a>
 
             <div class="mt-2 flex items-center justify-center gap-1.5 text-[10px] font-semibold">
-                <span class="px-2 py-0.5 rounded-full bg-[#0b192c] text-cyan-300 tracking-wide">v0.5</span>
-                <span class="px-2 py-0.5 rounded-full bg-white text-indigo-700 ring-1 ring-indigo-200">Fase 1 · Daily Use</span>
+                <span class="px-2 py-0.5 rounded-full bg-[#0b192c] text-cyan-300 tracking-wide">v1.0</span>
+                <span class="px-2 py-0.5 rounded-full bg-white text-indigo-700 ring-1 ring-indigo-200">Fase 2 · NARA 1.0</span>
             </div>
             <p class="mt-1.5 text-center text-[11px] leading-snug text-slate-600">
-                Rencanakan, fokus, dan catat karya nyata setiap hari.
+                Sistem Lengkap, Deterministik & Integrasi Eksternal.
             </p>
         </div>
 
@@ -67,9 +67,16 @@
                 $navGroups = [
                     'Navigasi Harian' => [
                         ['route' => 'panel.today', 'href' => route('panel.today'), 'icon' => '🎯', 'label' => 'Today (Fokus)', 'desc' => 'Jadwal, prioritas & kapasitas', 'badge' => null],
+                        ['route' => 'panel.focus', 'href' => route('panel.focus'), 'icon' => '⏱️', 'label' => 'Mode Fokus (Timer)', 'desc' => 'Deep work hening per task', 'badge' => null],
                         ['route' => 'panel.inbox.*', 'href' => route('panel.inbox.index'), 'icon' => '📥', 'label' => 'Inbox (Capture)', 'desc' => 'Tangkap ide & triase cepat', 'badge' => $inboxPendingCount > 0 ? $inboxPendingCount : null],
+                        ['route' => 'panel.calendar.*', 'href' => route('panel.calendar.index'), 'icon' => '📅', 'label' => 'Kalender & Sesi', 'desc' => 'Sinkron Google & deteksi konflik', 'badge' => null],
                         ['route' => 'panel.kanban.*', 'href' => route('panel.kanban.index'), 'icon' => '🗂️', 'label' => 'Kanban View', 'desc' => 'Alur kerja visual per status', 'badge' => null],
                         ['route' => 'panel.tasks.*', 'href' => route('panel.tasks.index'), 'icon' => '✅', 'label' => 'Tasks (Table)', 'desc' => 'Daftar lengkap & filter task', 'badge' => null],
+                    ],
+                    'Perencanaan & Review (Fase 2)' => [
+                        ['route' => 'panel.matrix.*', 'href' => route('panel.matrix.index'), 'icon' => '🧭', 'label' => 'Matrix Eisenhower', 'desc' => '4 kuadran prioritas cerdas', 'badge' => null],
+                        ['route' => 'panel.timeline.*', 'href' => route('panel.timeline.index'), 'icon' => '🗺️', 'label' => 'Roadmap & Timeline', 'desc' => 'Horizon progres & milestone', 'badge' => null],
+                        ['route' => 'panel.weekly-reviews.*', 'href' => route('panel.weekly-reviews.index'), 'icon' => '📊', 'label' => 'Weekly Review', 'desc' => 'Ritual evaluasi mingguan ≤15m', 'badge' => null],
                         ['route' => 'panel.outputs.*', 'href' => route('panel.outputs.index'), 'icon' => '🏆', 'label' => 'Outputs (Karya)', 'desc' => 'Bukti hasil kerja nyata', 'badge' => null],
                     ],
                     'Komitmen & Goal' => [
@@ -78,7 +85,7 @@
                         ['route' => 'panel.life-domains.*', 'href' => route('panel.life-domains.index'), 'icon' => '🌱', 'label' => 'Life Domains', 'desc' => 'Area hidup yang dijaga', 'badge' => null],
                     ],
                     'Sistem' => [
-                        ['route' => 'panel.settings.*', 'href' => route('panel.settings.index'), 'icon' => '⚙️', 'label' => 'Settings & 2FA', 'desc' => 'Kapasitas, Telegram & keamanan', 'badge' => $needs2fa ? '!' : null],
+                        ['route' => 'panel.settings.*', 'href' => route('panel.settings.index'), 'icon' => '⚙️', 'label' => 'Settings & Integrasi', 'desc' => 'Kapasitas, Telegram & Google Cal', 'badge' => $needs2fa ? '!' : null],
                     ],
                 ];
             @endphp

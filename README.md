@@ -1,6 +1,6 @@
 # NARA — Personal AI Agent (Core System)
 
-> **Versi 0.5 (Fase 1 — Daily Use)** · Lini NARA (Neural Autonomous Reasoning Agent)  
+> **Versi 1.0 (Fase 2 — Sistem Lengkap & Integrasi Eksternal)** · Lini NARA (Neural Autonomous Reasoning Agent)  
 > PT Imfar Manggala Nara · Solo Developer Edition  
 > Dokumen Acuan Tunggal: `nara_architecture_1.1.md`
 
@@ -62,6 +62,39 @@ NARA adalah Personal AI Agent yang bekerja bersama manusia untuk memahami, meren
   - **Proteksi Tenang & Anti-Spam (7.8):** Jam tenang (22:00–06:30), batas maksimal 8 notifikasi per hari, dan kunci deduplikasi otomatis (`daily_briefing:{user_id}:{date}` & `reminder:schedule:{id}`).
   - **Audit Logging Lengkap (9.10):** Pencatatan riwayat pengiriman pada tabel `notifications` dan `notification_logs`.
   - **Uji Coba Manual 1-Klik:** Tombol uji coba langsung di halaman web Settings (`/panel/settings`) serta perintah CLI Artisan.
+
+### 3. Sistem Lengkap & Integrasi Eksternal (Fase 2 — NARA 1.0)
+- **Kalender Interaktif & Sesi Terjadwal (`/panel/calendar`):**
+  - Tampilan fleksibel: Bulan, Minggu (7 kolom), dan Hari dengan navigasi tanggal instan.
+  - Sesi kerja dialokasikan ke slot waktu dengan durasi deterministik.
+  - Sidebar task belum terjadwal (*unscheduled*) untuk alokasi cepat 1-klik.
+  - Indikator sinkronisasi Google Calendar (`✓` Synced, `⟳` Pending, `⚠` Error, `🏠` Mode Lokal).
+  - Deteksi konflik otomatis terhadap jadwal internal NARA dan blok kalender pihak ketiga (`busy_blocks`).
+- **Roadmap & Timeline Proyek (`/panel/timeline`):**
+  - Visualisasi progress bar penyelesaian task per proyek (0–100%).
+  - Tanggal horizon, tenggat target, dan hitungan mundur sisa hari.
+  - Rincian milestone dan task terbuka per proyek.
+- **Matrix Eisenhower Cerdas (`/panel/matrix`):**
+  - Klasifikasi 4 kuadran otomatis deterministik (`MatrixClassifier`):
+    - **Q1: Kerjakan (Do First):** Urgen (tenggat ≤ 3 hari) & Penting (prioritas tinggi / dampak proyek tinggi).
+    - **Q2: Jadwalkan (Schedule):** Penting, belum urgen. Alokasikan ke kalender sebelum menjadi krisis.
+    - **Q3: Cepatkan / Delegasikan (Delegate):** Urgen namun dampak strategis rendah.
+    - **Q4: Suatu Saat (Someday):** Ide atau backlog bernilai rendah tanpa tenggat.
+    - **Lajur Khusus: Menunggu (Waiting):** Task yang terhambat pihak ketiga (`waiting_reason`).
+- **Weekly Review Ritual (`/panel/weekly-reviews`):**
+  - Ritual evaluasi mingguan singkat (≤ 15 menit).
+  - Metrik otomatis 7 hari terakhir: task selesai, deliverable/output nyata, beban kapasitas kerja.
+  - Lembar refleksi pembelajaran dan penguncian Top 3 Prioritas Utama (*Must-Wins*) minggu berikutnya.
+  - Arsip riwayat seluruh sesi review mingguan.
+- **Mode Fokus / Deep Work Timer (`/panel/focus`):**
+  - Antarmuka timer hening tanpa distraksi (Pomodoro 25m, Deep Work 45m, Sprint 15m, atau kustom).
+  - Akumulasi waktu pengerjaan otomatis dicatat ke field `actual_minutes` task.
+  - Opsi instan menandai task selesai saat sesi fokus berakhir.
+- **Manajemen Integrasi Eksternal Dinamis (Fase 2):**
+  - Integrasi dikelola dinamis di database (`integrations` table) dengan sakelar on/off aturan independen.
+  - Variabel integrasi (Bot Token, Chat ID, Google Client ID, Secret, Calendar ID) dapat diatur langsung di panel Settings (`/panel/settings#integrations`) tanpa wajib mengedit berkas `.env`.
+  - **Aturan Telegram On/Off:** Jika dimatikan, briefing pagi dan reminder jadwal berhenti sementara, dan webhook masuk ditolak dengan aman.
+  - **Aturan Google Calendar On/Off:** Jika dimatikan, kalender berjalan 100% dalam mode lokal (`🏠`) yang aman tanpa dependensi atau kegagalan koneksi pihak ketiga.
 
 ---
 

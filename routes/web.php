@@ -1,14 +1,19 @@
 <?php
 
+use App\Http\Controllers\Panel\CalendarController;
+use App\Http\Controllers\Panel\FocusController;
 use App\Http\Controllers\Panel\GoalController;
 use App\Http\Controllers\Panel\InboxController;
 use App\Http\Controllers\Panel\KanbanController;
 use App\Http\Controllers\Panel\LifeDomainController;
+use App\Http\Controllers\Panel\MatrixController;
 use App\Http\Controllers\Panel\OutputController;
 use App\Http\Controllers\Panel\ProjectController;
 use App\Http\Controllers\Panel\SettingsController;
 use App\Http\Controllers\Panel\TaskController;
+use App\Http\Controllers\Panel\TimelineController;
 use App\Http\Controllers\Panel\TodayController;
+use App\Http\Controllers\Panel\WeeklyReviewController;
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 
@@ -44,6 +49,19 @@ Route::middleware(['auth', 'two-factor'])
         Route::get('kanban', [KanbanController::class, 'index'])->name('kanban.index');
         Route::post('kanban/tasks/{task}/move', [KanbanController::class, 'move'])->name('kanban.tasks.move');
 
+        // Fase 2: Kalender, Timeline, Matrix, Weekly Review, & Focus Mode
+        Route::get('calendar', [CalendarController::class, 'index'])->name('calendar.index');
+        Route::post('calendar/schedules', [CalendarController::class, 'store'])->name('calendar.store');
+        Route::delete('calendar/schedules/{schedule}', [CalendarController::class, 'destroy'])->name('calendar.destroy');
+        Route::post('calendar/sync', [CalendarController::class, 'sync'])->name('calendar.sync');
+
+        Route::get('timeline', [TimelineController::class, 'index'])->name('timeline.index');
+        Route::get('matrix', [MatrixController::class, 'index'])->name('matrix.index');
+        Route::resource('weekly-reviews', WeeklyReviewController::class);
+
+        Route::get('focus', [FocusController::class, 'index'])->name('focus');
+        Route::post('focus', [FocusController::class, 'store'])->name('focus.store');
+
         Route::resource('life-domains', LifeDomainController::class);
         Route::resource('goals', GoalController::class);
         Route::resource('projects', ProjectController::class);
@@ -63,6 +81,9 @@ Route::middleware(['auth', 'two-factor'])
 
         Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
         Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
+        Route::post('settings/integrations/telegram', [SettingsController::class, 'updateTelegramIntegration'])->name('settings.integrations.telegram');
+        Route::post('settings/integrations/google', [SettingsController::class, 'updateGoogleIntegration'])->name('settings.integrations.google');
+        Route::post('settings/integrations/{provider}/toggle', [SettingsController::class, 'toggleIntegration'])->name('settings.integrations.toggle');
         Route::post('settings/test-notification', [SettingsController::class, 'testNotification'])->name('settings.test-notification');
         Route::post('settings/two-factor', [SettingsController::class, 'enableTwoFactor'])->name('settings.two-factor.enable');
         Route::post('settings/two-factor/confirm', [SettingsController::class, 'confirmTwoFactor'])->name('settings.two-factor.confirm');

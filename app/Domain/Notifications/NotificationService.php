@@ -2,6 +2,7 @@
 
 namespace App\Domain\Notifications;
 
+use App\Domain\Integrations\IntegrationService;
 use App\Domain\Scheduling\CapacityService;
 use App\Domain\Settings\SettingService;
 use App\Integrations\Telegram\TelegramClient;
@@ -25,6 +26,7 @@ class NotificationService
         private readonly TelegramClient $telegram,
         private readonly CapacityService $capacity,
         private readonly SettingService $settings,
+        private readonly IntegrationService $integrations,
     ) {}
 
     /**
@@ -34,6 +36,13 @@ class NotificationService
      */
     public function sendDailyBriefing(User $user, bool $force = false): array
     {
+        if (! $this->integrations->isTelegramEnabled($user)) {
+            return [
+                'success' => false,
+                'message' => 'Integrasi Telegram dinonaktifkan pada menu Settings.',
+            ];
+        }
+
         if (empty($user->telegram_chat_id)) {
             return [
                 'success' => false,
@@ -136,7 +145,7 @@ class NotificationService
         }
 
         // Kirim Telegram
-        $sent = $this->telegram->sendMessage($user->telegram_chat_id, $text);
+        $sent = TelegramClient::forUser($user)->sendMessage($user->telegram_chat_id, $text);
 
         // Simpan Notification
         $notification = Notification::updateOrCreate(
@@ -193,6 +202,13 @@ class NotificationService
             ];
         }
 
+        if (! $this->integrations->isTelegramEnabled($user)) {
+            return [
+                'success' => false,
+                'message' => 'Integrasi Telegram dinonaktifkan pada menu Settings.',
+            ];
+        }
+
         $dedupeKey = "reminder:schedule:{$schedule->id}";
 
         if (! $force && Notification::where('dedupe_key', $dedupeKey)->exists()) {
@@ -223,7 +239,7 @@ class NotificationService
         $text .= "Durasi: {$duration} menit\n\n";
         $text .= "↳ Selesai: /done_{$task->id}";
 
-        $sent = $this->telegram->sendMessage($user->telegram_chat_id, $text);
+        $sent = TelegramClient::forUser($user)->sendMessage($user->telegram_chat_id, $text);
 
         $notification = Notification::updateOrCreate(
             ['dedupe_key' => $dedupeKey],

@@ -6,6 +6,7 @@ use App\Support\Enums\ActivitySource;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -46,6 +47,12 @@ class Schedule extends Model
     public function task(): BelongsTo
     {
         return $this->belongsTo(Task::class);
+    }
+
+    /** @return HasOne<CalendarEvent, $this> */
+    public function calendarEvent(): HasOne
+    {
+        return $this->hasOne(CalendarEvent::class);
     }
 
     public function durationMinutes(): int
