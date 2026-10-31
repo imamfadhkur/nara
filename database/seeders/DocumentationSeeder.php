@@ -3,7 +3,9 @@
 namespace Database\Seeders;
 
 use App\Models\DocumentationArticle;
+use App\Models\DocumentationCategory;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Str;
 
 class DocumentationSeeder extends Seeder
 {
@@ -443,6 +445,18 @@ MARKDOWN
         ];
 
         foreach ($articles as $data) {
+            $catSlug = Str::slug($data['category_name']);
+            $category = DocumentationCategory::firstOrCreate(
+                ['slug' => $catSlug],
+                [
+                    'name' => $data['category_name'],
+                    'icon' => $data['icon'] ?: '📁',
+                    'sort_order' => $data['sort_order'] ?? 0,
+                ]
+            );
+
+            $data['documentation_category_id'] = $category->id;
+
             DocumentationArticle::updateOrCreate(
                 ['slug' => $data['slug']],
                 $data

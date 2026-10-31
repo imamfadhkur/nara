@@ -1,5 +1,13 @@
 <x-panel-layout :title="$isEdit ? 'Edit Dokumentasi: ' . $article->title : 'Tulis Dokumentasi Baru'" :heading="$isEdit ? 'Edit Panduan Dokumentasi' : 'Tulis Panduan Dokumentasi Baru'">
-    <div class="max-w-4xl mx-auto space-y-6">
+    <div class="max-w-4xl mx-auto space-y-6"
+         x-data="{
+             selectedCategory: '{{ old('documentation_category_id', $article->documentation_category_id ?? '') }}',
+             isNewCategory: {{ old('documentation_category_id') === 'new' ? 'true' : 'false' }},
+             checkCategoryChange() {
+                 this.isNewCategory = (this.selectedCategory === 'new');
+             }
+         }">
+
         <div class="flex items-center justify-between text-xs">
             <a href="{{ $isEdit ? route('panel.docs.show', $article->slug) : route('panel.docs.index') }}" class="nara-btn-secondary py-1.5 px-3">
                 ← Batal / Kembali
@@ -67,57 +75,113 @@
                     </div>
                 </div>
 
-                {{-- Kategori & Ikon --}}
+                {{-- Pemilihan Kategori Terstruktur (Dropdown Tabel + Opsi Buat Baru) --}}
+                <div class="p-4 bg-slate-50 rounded-xl border border-slate-200/90 space-y-3">
+                    <div class="flex items-center justify-between">
+                        <label class="font-bold text-slate-900 flex items-center gap-1.5">
+                            <span>🏷️</span>
+                            <span>Kategori Dokumentasi (Tabel Terstruktur) *</span>
+                        </label>
+                        <button
+                            type="button"
+                            @click="isNewCategory = !isNewCategory; selectedCategory = isNewCategory ? 'new' : ''"
+                            class="text-xs font-semibold text-sky-600 hover:text-sky-800 transition"
+                            x-text="isNewCategory ? '← Pilih dari Kategori yang Ada' : '+ Buat Kategori Baru'"
+                        >
+                            + Buat Kategori Baru
+                        </button>
+                    </div>
+
+                    {{-- Mode 1: Pilih dari Kategori yang Sudah Ada di Database --}}
+                    <div x-show="!isNewCategory">
+                        <select
+                            name="documentation_category_id"
+                            x-model="selectedCategory"
+                            @change="checkCategoryChange()"
+                            class="w-full text-xs rounded-lg border-slate-300 py-2 px-3 focus:border-sky-500 bg-white"
+                        >
+                            <option value="">-- Pilih Kategori yang Sudah Ada di Database --</option>
+                            @foreach ($categories as $cat)
+                                <option value="{{ $cat->id }}" @selected(old('documentation_category_id', $article->documentation_category_id) == $cat->id)>
+                                    {{ $cat->icon }} {{ $cat->name }}
+                                </option>
+                            @endforeach
+                            <option value="new">➕ + Buat Kategori Baru Lainnya...</option>
+                        </select>
+                        <p class="text-[11px] text-slate-500 mt-1">
+                            Pilih salah satu dari <strong>{{ $categories->count() }} kategori resmi</strong> yang sudah terdaftar tanpa perlu menebak-nebak nama kategori.
+                        </p>
+                    </div>
+
+                    {{-- Mode 2: Form Buat Kategori Baru jika Tidak Cocok --}}
+                    <div x-show="isNewCategory" class="p-3 bg-white rounded-lg border border-sky-200 space-y-3" style="display: none;">
+                        <span class="text-[11px] font-bold text-sky-800 uppercase tracking-wider block">
+                            ✨ Detail Kategori Baru
+                        </span>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                            <div class="sm:col-span-2">
+                                <label class="block font-semibold text-slate-700 mb-1">Nama Kategori Baru *</label>
+                                <input
+                                    type="text"
+                                    name="new_category_name"
+                                    value="{{ old('new_category_name') }}"
+                                    placeholder="Contoh: Integrasi WhatsApp / Webhook"
+                                    class="w-full text-xs rounded-lg border-slate-300 py-1.5 px-3 focus:border-sky-500"
+                                >
+                            </div>
+
+                            <div>
+                                <label class="block font-semibold text-slate-700 mb-1">Ikon Kategori</label>
+                                <input
+                                    type="text"
+                                    name="new_category_icon"
+                                    value="{{ old('new_category_icon', '📁') }}"
+                                    placeholder="📁"
+                                    class="w-full text-xs text-center rounded-lg border-slate-300 py-1.5 px-3 focus:border-sky-500"
+                                >
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block font-semibold text-slate-700 mb-1">Deskripsi Singkat Kategori (Opsional)</label>
+                            <input
+                                type="text"
+                                name="new_category_desc"
+                                value="{{ old('new_category_desc') }}"
+                                placeholder="Penjelasan singkat tujuan kelompok panduan ini..."
+                                class="w-full text-xs rounded-lg border-slate-300 py-1.5 px-3 focus:border-sky-500"
+                            >
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Ikon Artikel --}}
                 <div class="grid grid-cols-1 sm:grid-cols-4 gap-4">
                     <div>
-                        <label class="block font-semibold text-slate-700 mb-1">Kategori (Kunci) *</label>
-                        <input
-                            type="text"
-                            name="category"
-                            value="{{ old('category', $article->category) }}"
-                            required
-                            placeholder="google_calendar"
-                            class="w-full text-xs font-mono rounded-lg border-slate-300 py-2 px-3 focus:border-sky-500"
-                        >
-                    </div>
-
-                    <div class="sm:col-span-2">
-                        <label class="block font-semibold text-slate-700 mb-1">Nama Kategori (Tampilan) *</label>
-                        <input
-                            type="text"
-                            name="category_name"
-                            value="{{ old('category_name', $article->category_name) }}"
-                            required
-                            placeholder="Integrasi Google Calendar"
-                            class="w-full text-xs rounded-lg border-slate-300 py-2 px-3 focus:border-sky-500"
-                        >
-                    </div>
-
-                    <div>
-                        <label class="block font-semibold text-slate-700 mb-1">Ikon (Emoji)</label>
+                        <label class="block font-semibold text-slate-700 mb-1">Ikon Artikel (Emoji)</label>
                         <input
                             type="text"
                             name="icon"
                             value="{{ old('icon', $article->icon ?: '📖') }}"
-                            placeholder="📅"
+                            placeholder="📖"
                             class="w-full text-xs text-center rounded-lg border-slate-300 py-2 px-3 focus:border-sky-500"
                         >
                     </div>
-                </div>
 
-                {{-- Ringkasan Excerpt --}}
-                <div>
-                    <label class="block font-semibold text-slate-700 mb-1">Ringkasan / Excerpt (Muncul di Kartu Depan) *</label>
-                    <textarea
-                        name="excerpt"
-                        rows="2"
-                        required
-                        placeholder="Ringkasan 1-2 kalimat mengenai topik ini..."
-                        class="w-full text-xs rounded-lg border-slate-300 py-2 px-3 focus:border-sky-500 leading-relaxed"
-                    >{{ old('excerpt', $article->excerpt) }}</textarea>
-                    @error('excerpt')
-                        <p class="text-rose-600 text-[11px] mt-1">{{ $message }}</p>
-                    @enderror
+                    <div class="sm:col-span-3">
+                        <label class="block font-semibold text-slate-700 mb-1">Ringkasan / Excerpt (Muncul di Kartu Depan) *</label>
+                        <textarea
+                            name="excerpt"
+                            rows="2"
+                            required
+                            placeholder="Ringkasan 1-2 kalimat mengenai topik ini..."
+                            class="w-full text-xs rounded-lg border-slate-300 py-2 px-3 focus:border-sky-500 leading-relaxed"
+                        >{{ old('excerpt', $article->excerpt) }}</textarea>
+                        @error('excerpt')
+                            <p class="text-rose-600 text-[11px] mt-1">{{ $message }}</p>
+                        @enderror
+                    </div>
                 </div>
 
                 {{-- Konten Lengkap Markdown --}}
@@ -179,4 +243,3 @@
         </div>
     </div>
 </x-panel-layout>
-

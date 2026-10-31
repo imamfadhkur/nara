@@ -52,9 +52,11 @@
                     Semua Kategori ({{ $totalCount }})
                 </a>
                 @foreach ($allCategories as $cat)
-                    <a href="{{ route('panel.docs.index', ['category' => $cat->category]) }}"
-                       class="px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition {{ $selectedCategory === $cat->category ? 'bg-sky-600 text-white shadow-xs' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50' }}">
-                        {{ $cat->category_name }}
+                    <a href="{{ route('panel.docs.index', ['category' => $cat->slug]) }}"
+                       class="px-3 py-1.5 rounded-lg font-medium whitespace-nowrap transition flex items-center gap-1.5 {{ $selectedCategory === $cat->slug || $selectedCategory === (string) $cat->id ? 'bg-sky-600 text-white shadow-xs font-bold' : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50' }}">
+                        <span>{{ $cat->icon }}</span>
+                        <span>{{ $cat->name }}</span>
+                        <span class="text-[10px] opacity-80">({{ $cat->articles_count }})</span>
                     </a>
                 @endforeach
             </div>
