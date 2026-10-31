@@ -592,16 +592,31 @@
                             </div>
                         </div>
 
-                        <div class="flex items-start gap-2">
-                            <span class="font-bold text-emerald-700 shrink-0">5.</span>
+                        <div class="flex items-start gap-2 bg-amber-50 p-2.5 rounded-lg border border-amber-200">
+                            <span class="font-bold text-amber-700 shrink-0">5.</span>
                             <div>
-                                <strong>Otorisasi Akun Google (Langkah Terakhir):</strong>
-                                Klik tombol <strong>Hubungkan Akun Google (Otorisasi Sekarang)</strong>. Anda akan diarahkan ke layar izin Google. Pilih akun Google Anda dan berikan izin kalender. Setelah selesai, NARA akan otomatis membuat kalender sekunder bernama <code>NARA</code> dan menyinkronkan seluruh jadwal Anda.
+                                <strong class="text-amber-900">Tambahkan Email ke "Test Users" (Wajib untuk Akun Pribadi):</strong>
+                                <p class="mt-0.5 text-amber-800">
+                                    Karena aplikasi berada dalam status *Testing* (Pengujian), Google memblokir login (Error 403 access_denied) kecuali email Anda didaftarkan sebagai tester:
+                                </p>
+                                <ol class="list-decimal ml-4 mt-1 space-y-0.5 text-amber-900 text-[11px]">
+                                    <li>Buka menu <strong>APIs & Services</strong> &gt; <strong>OAuth consent screen</strong> (Layar Persetujuan OAuth).</li>
+                                    <li>Scroll ke bagian <strong>Test users</strong> (Pengguna uji), klik <strong>+ ADD USERS</strong>.</li>
+                                    <li>Ketik email Anda (misal: <code>imamfadhkur1@gmail.com</code>) lalu klik <strong>Save</strong>.</li>
+                                </ol>
                             </div>
                         </div>
 
                         <div class="flex items-start gap-2">
                             <span class="font-bold text-emerald-700 shrink-0">6.</span>
+                            <div>
+                                <strong>Otorisasi Akun Google (Langkah Terakhir):</strong>
+                                Klik tombol <strong>Hubungkan Akun Google (Otorisasi Sekarang)</strong>. Jika muncul peringatan <em>"Google belum memverifikasi aplikasi ini"</em>, klik <strong>Lanjutan (Advanced)</strong> di kiri bawah &gt; klik <strong>Buka NARA Personal Agent (tidak aman)</strong> &gt; centang izin kalender lalu klik <strong>Lanjutkan</strong>. NARA akan otomatis membuat kalender <code>NARA</code> dan menyinkronkan seluruh jadwal Anda.
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-2">
+                            <span class="font-bold text-emerald-700 shrink-0">7.</span>
                             <div>
                                 <strong>Mode Simulasi / Tanpa Kredensial:</strong> Jika Anda belum menghubungkan akun Google atau menonaktifkan sakelar integrasi, NARA secara cerdas beralih ke Mode Kalender Lokal (`🏠`), sehingga Anda tetap dapat menjadwalkan task tanpa hambatan.
                             </div>
