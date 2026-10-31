@@ -57,3 +57,4 @@ class DocumentationArticle extends Model
         return Str::markdown($this->content ?? '');
     }
 }
+

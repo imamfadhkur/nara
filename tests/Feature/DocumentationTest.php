@@ -111,3 +111,4 @@ test('can delete a documentation article', function () {
     $response->assertRedirect(route('panel.docs.index'));
     expect(DocumentationArticle::where('id', $article->id)->exists())->toBeFalse();
 });
+

@@ -182,3 +182,4 @@ class DocumentationController extends Controller
             ->with('status', "Artikel \"{$title}\" berhasil dihapus.");
     }
 }
+

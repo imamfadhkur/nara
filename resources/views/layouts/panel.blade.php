@@ -13,17 +13,56 @@
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>[x-cloak]{display:none !important;}</style>
 </head>
-<body class="h-full bg-slate-50 font-sans text-slate-900 antialiased" x-data="{ sidebarOpen: false }">
+<body class="h-full bg-slate-50 font-sans text-slate-900 antialiased"
+      x-data="{
+          sidebarMobileOpen: false,
+          sidebarCollapsed: localStorage.getItem('nara_sidebar_collapsed') === 'true',
+          toggleSidebar() {
+              this.sidebarCollapsed = !this.sidebarCollapsed;
+              localStorage.setItem('nara_sidebar_collapsed', this.sidebarCollapsed);
+          }
+      }">
 <div class="min-h-full flex">
+
+    {{-- Mobile Backdrop Overlay --}}
+    <div
+        x-show="sidebarMobileOpen"
+        x-transition:enter="transition-opacity ease-linear duration-200"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition-opacity ease-linear duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        @click="sidebarMobileOpen = false"
+        x-cloak
+        class="fixed inset-0 z-30 bg-slate-950/60 backdrop-blur-2xs lg:hidden"
+    ></div>
 
     {{-- Sidebar navigasi (Bagian 3.7 & 5.3) --}}
     <aside
-        :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-        class="fixed inset-y-0 left-0 z-40 w-72 flex flex-col bg-[#0b192c] text-slate-200 transition-transform duration-200 lg:static lg:translate-x-0"
+        :class="{
+            'translate-x-0': sidebarMobileOpen,
+            '-translate-x-full': !sidebarMobileOpen,
+            'lg:translate-x-0 lg:ml-0': !sidebarCollapsed,
+            'lg:-ml-72 lg:-translate-x-full': sidebarCollapsed
+        }"
+        class="fixed inset-y-0 left-0 z-40 w-72 flex flex-col bg-[#0b192c] text-slate-200 transition-all duration-300 ease-in-out lg:static shrink-0 shadow-2xl lg:shadow-none"
     >
         {{-- Header brand: latar terang agar logo navy kontras dengan sidebar gelap --}}
-        <div class="relative px-4 pt-4 pb-3 bg-gradient-to-br from-white via-sky-50 to-indigo-100 border-b-4 border-cyan-400/70 shadow-md">
-            <button type="button" @click="sidebarOpen = false" class="lg:hidden absolute top-2 right-3 text-slate-500 hover:text-slate-900">✕</button>
+        <div class="relative px-4 pt-3 pb-3 bg-gradient-to-br from-white via-sky-50 to-indigo-100 border-b-4 border-cyan-400/70 shadow-md">
+            {{-- Tombol Sembunyikan Sidebar --}}
+            <div class="flex items-center justify-between mb-1.5">
+                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Navigasi NARA</span>
+                <button
+                    type="button"
+                    @click="window.innerWidth < 1024 ? sidebarMobileOpen = false : toggleSidebar()"
+                    class="flex items-center gap-1 text-[11px] font-semibold text-slate-600 hover:text-slate-950 px-2 py-0.5 rounded-md hover:bg-slate-200/70 transition cursor-pointer"
+                    title="Sembunyikan Sidebar agar fokus ke konten"
+                >
+                    <span class="text-xs">⇤</span>
+                    <span class="hidden sm:inline">Sembunyikan</span>
+                </button>
+            </div>
 
             <a href="{{ route('panel.today') }}" class="block group" title="NARA AI — Your Personal AI Agent">
                 {{-- Crop area transparan PNG (konten logo ±414×114 px dari 492×277 px) --}}
@@ -129,11 +168,23 @@
     {{-- Area utama --}}
     <div class="flex-1 flex flex-col min-w-0">
         {{-- Topbar (Bagian 3.7): pencarian cepat, tombol + Task, indikator status --}}
-        <header class="h-16 bg-white border-b border-slate-200 px-4 sm:px-6 flex items-center justify-between gap-4">
-            <div class="flex items-center gap-3">
-                <button type="button" @click="sidebarOpen = true" class="lg:hidden rounded-lg p-2 text-slate-600 hover:bg-slate-100">
-                    ☰
+        <header class="h-16 bg-white border-b border-slate-200 px-4 sm:px-6 flex items-center justify-between gap-4 sticky top-0 z-20">
+            <div class="flex items-center gap-2 sm:gap-3 min-w-0">
+                {{-- Tombol Toggle Hide / Show Sidebar (Mobile & Desktop) --}}
+                <button
+                    type="button"
+                    @click="window.innerWidth < 1024 ? sidebarMobileOpen = !sidebarMobileOpen : toggleSidebar()"
+                    class="rounded-lg py-1.5 px-2.5 text-slate-700 hover:text-slate-950 hover:bg-slate-100 transition flex items-center gap-1.5 cursor-pointer border border-slate-200 shrink-0 shadow-2xs"
+                    :title="sidebarCollapsed ? 'Tampilkan Menu Sidebar' : 'Sembunyikan Menu Sidebar (Mode Fokus)'"
+                >
+                    <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
+                    </svg>
+                    <span class="text-xs font-semibold text-slate-700 hidden sm:inline" x-text="sidebarCollapsed ? 'Tampilkan Menu' : 'Sembunyikan Menu'">
+                        Sembunyikan Menu
+                    </span>
                 </button>
+
                 <h1 class="text-base sm:text-lg font-semibold text-slate-900 truncate">
                     {{ $heading ?? 'Panel NARA' }}
                 </h1>
