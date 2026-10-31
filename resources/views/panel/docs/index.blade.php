@@ -244,8 +244,8 @@
         @endif
 
         {{-- Modal Kelola Seluruh Kategori --}}
-        <div x-cloak x-show="openManageModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-            <div @click.away="openManageModal = false" class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-3xl w-full p-6 space-y-5 max-h-[90vh] overflow-y-auto">
+        <div x-cloak x-show="openManageModal" class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs p-4 sm:p-6 md:p-8 flex items-start justify-center">
+            <div @click.away="openManageModal = false" class="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-4xl sm:max-w-5xl w-full p-5 sm:p-7 space-y-5 my-6 sm:my-10">
                 <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div class="flex items-center gap-2">
                         <span class="text-xl">🏷️</span>
@@ -254,7 +254,7 @@
                             <p class="text-xs text-slate-500">Daftar kategori dokumentasi resmi yang tersimpan di database.</p>
                         </div>
                     </div>
-                    <button @click="openManageModal = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <button @click="openManageModal = false" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition" title="Tutup Modal">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -262,7 +262,7 @@
                 </div>
 
                 {{-- Tombol Toggle Tambah Kategori Baru --}}
-                <div class="flex items-center justify-between bg-slate-50 p-3 rounded-xl border border-slate-200/80">
+                <div class="flex items-center justify-between bg-slate-50 p-3.5 rounded-xl border border-slate-200/80">
                     <span class="text-xs font-medium text-slate-700">Ingin membuat kategori baru?</span>
                     <button type="button"
                             @click="openCreateCatModal = !openCreateCatModal"
@@ -303,17 +303,17 @@
                     </form>
                 </div>
 
-                {{-- Tabel Daftar Seluruh Kategori --}}
-                <div class="border border-slate-200 rounded-xl overflow-hidden">
-                    <table class="w-full text-left text-xs">
+                {{-- Tabel Daftar Seluruh Kategori (Bisa Di-scroll Horizontal & Responsif) --}}
+                <div class="border border-slate-200 rounded-xl overflow-x-auto bg-white shadow-2xs">
+                    <table class="w-full text-left text-xs min-w-[700px]">
                         <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
                             <tr>
-                                <th class="p-3">Kategori</th>
-                                <th class="p-3">Slug</th>
-                                <th class="p-3">Deskripsi</th>
-                                <th class="p-3 text-center">Artikel Aktif</th>
-                                <th class="p-3 text-center">Urutan</th>
-                                <th class="p-3 text-right">Aksi</th>
+                                <th class="p-3 min-w-[180px] whitespace-nowrap">Kategori</th>
+                                <th class="p-3 min-w-[140px] whitespace-nowrap">Slug</th>
+                                <th class="p-3 min-w-[200px]">Deskripsi</th>
+                                <th class="p-3 min-w-[100px] text-center whitespace-nowrap">Artikel Aktif</th>
+                                <th class="p-3 min-w-[70px] text-center whitespace-nowrap">Urutan</th>
+                                <th class="p-3 min-w-[140px] text-right whitespace-nowrap">Aksi</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-slate-100">
@@ -326,15 +326,15 @@
                                     <td class="p-3 text-slate-500 font-mono text-[11px] whitespace-nowrap">
                                         {{ $c->slug }}
                                     </td>
-                                    <td class="p-3 text-slate-500 max-w-xs truncate" title="{{ $c->description }}">
+                                    <td class="p-3 text-slate-500 max-w-xs break-words" title="{{ $c->description }}">
                                         {{ $c->description ?: '—' }}
                                     </td>
-                                    <td class="p-3 text-center">
+                                    <td class="p-3 text-center whitespace-nowrap">
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-700">
                                             {{ $c->articles_count }} artikel
                                         </span>
                                     </td>
-                                    <td class="p-3 text-center text-slate-600 font-mono">
+                                    <td class="p-3 text-center text-slate-600 font-mono whitespace-nowrap">
                                         {{ $c->sort_order }}
                                     </td>
                                     <td class="p-3 text-right whitespace-nowrap">
@@ -371,15 +371,15 @@
                     </table>
                 </div>
 
-                <div class="flex justify-end pt-2 border-t border-slate-100">
-                    <button type="button" @click="openManageModal = false" class="nara-btn-secondary text-xs py-1.5 px-4">Tutup</button>
+                <div class="flex justify-end pt-3 border-t border-slate-100">
+                    <button type="button" @click="openManageModal = false" class="nara-btn-secondary text-xs py-2 px-5">Tutup</button>
                 </div>
             </div>
         </div>
 
         {{-- Modal Edit Kategori --}}
-        <div x-cloak x-show="openEditModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs">
-            <div @click.away="openEditModal = false" class="bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-4">
+        <div x-cloak x-show="openEditModal" class="fixed inset-0 z-50 overflow-y-auto bg-slate-900/60 backdrop-blur-xs p-4 sm:p-6 flex items-start sm:items-center justify-center">
+            <div @click.away="openEditModal = false" class="relative bg-white rounded-2xl shadow-2xl border border-slate-200 max-w-md w-full p-6 space-y-4 my-8">
                 <div class="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div class="flex items-center gap-2">
                         <span class="text-xl">✏️</span>
@@ -388,7 +388,7 @@
                             <p class="text-xs text-slate-500">Perbarui nama, ikon, atau urutan kategori.</p>
                         </div>
                     </div>
-                    <button @click="openEditModal = false" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg">
+                    <button @click="openEditModal = false" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-100 transition" title="Tutup Modal">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                         </svg>
