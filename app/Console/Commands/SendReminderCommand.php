@@ -78,3 +78,4 @@ class SendReminderCommand extends Command
         return self::FAILURE;
     }
 }
+

@@ -54,3 +54,4 @@ class Notification extends Model
         return $this->hasMany(NotificationLog::class);
     }
 }
+

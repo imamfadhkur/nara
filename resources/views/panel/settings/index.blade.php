@@ -99,7 +99,16 @@
                         <div class="flex flex-wrap items-center gap-3 pt-2">
                             {{-- Buat ulang kode pemulihan --}}
                             <div x-data="{ open: false }">
-                                <button type="button" @click="open = true" class="nara-btn-secondary text-xs">
+                                <button type="button"
+                                        @click="open = true"
+                                        class="inline-flex items-center justify-center px-4 py-2
+                                            rounded-lg border border-blue-300
+                                            bg-blue-50 text-blue-800
+                                            text-xs font-semibold
+                                            hover:bg-blue-100 hover:border-blue-400
+                                            active:bg-blue-200
+                                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                                            transition-all">
                                     Buat Ulang Kode Pemulihan
                                 </button>
                                 <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
@@ -110,8 +119,26 @@
                                             @csrf
                                             <input type="password" name="password" required placeholder="Kata sandi..." class="nara-input text-xs">
                                             <div class="flex justify-end gap-2">
-                                                <button type="button" @click="open = false" class="nara-btn-secondary text-xs">Batal</button>
-                                                <button type="submit" class="nara-btn-primary text-xs">Generate</button>
+                                                <button type="button"
+                                                        @click="open = false"
+                                                        class="inline-flex items-center justify-center px-4 py-2
+                                                            rounded-lg border border-slate-300
+                                                            bg-slate-100 text-slate-800
+                                                            text-xs font-semibold
+                                                            hover:bg-slate-200 hover:text-slate-900
+                                                            transition-all">
+                                                    Batal
+                                                </button>
+                                                <button type="submit"
+                                                        class="inline-flex items-center justify-center px-4 py-2
+                                                            rounded-lg bg-blue-600 text-white
+                                                            text-xs font-semibold
+                                                            hover:bg-blue-700
+                                                            active:bg-blue-800
+                                                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2
+                                                            transition-all">
+                                                    Generate
+                                                </button>
                                             </div>
                                         </form>
                                     </div>
@@ -120,7 +147,16 @@
 
                             {{-- Matikan 2FA --}}
                             <div x-data="{ open: false }">
-                                <button type="button" @click="open = true" class="text-xs text-rose-600 hover:underline">
+                                <button type="button"
+                                        @click="open = true"
+                                        class="inline-flex items-center justify-center
+                                            px-3 py-2 rounded-lg
+                                            bg-rose-50 text-rose-700
+                                            border border-rose-200
+                                            text-xs font-semibold
+                                            hover:bg-rose-100 hover:border-rose-300
+                                            active:bg-rose-200
+                                            transition-all">
                                     Nonaktifkan 2FA
                                 </button>
                                 <div x-show="open" x-cloak class="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4">
@@ -133,7 +169,17 @@
                                             <input type="password" name="password" required placeholder="Kata sandi..." class="nara-input text-xs">
                                             <div class="flex justify-end gap-2">
                                                 <button type="button" @click="open = false" class="nara-btn-secondary text-xs">Batal</button>
-                                                <button type="submit" class="nara-btn-danger text-xs">Nonaktifkan</button>
+                                                <button type="submit"
+                                                        class="inline-flex items-center justify-center
+                                                            px-4 py-2 rounded-lg
+                                                            bg-rose-600 text-white
+                                                            text-xs font-semibold
+                                                            border border-rose-700
+                                                            hover:bg-rose-700
+                                                            active:bg-rose-800
+                                                            transition-all">
+                                                    Nonaktifkan
+                                                </button>
                                             </div>
                                         </form>
                                     </div>
@@ -166,17 +212,39 @@
                     <form method="POST" action="{{ route('panel.settings.test-notification') }}">
                         @csrf
                         <input type="hidden" name="type" value="briefing">
-                        <button type="submit" class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 active:scale-95 text-white transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" @disabled(empty($user->telegram_chat_id))>
-                            <span>☀️</span>
-                            <span>Kirim Briefing Pagi</span>
+                        <button type="submit"
+                                style="background-color: #d97706 !important; color: #ffffff !important;"
+                                class="inline-flex items-center justify-center gap-2
+                                    px-4 py-2.5 rounded-lg
+                                    text-xs font-bold
+                                    shadow-sm
+                                    hover:brightness-110 hover:shadow
+                                    active:scale-95
+                                    disabled:opacity-50
+                                    disabled:cursor-not-allowed
+                                    transition-all"
+                                @disabled(empty($user->telegram_chat_id))>
+                            <span class="text-sm">☀️</span>
+                            <span style="color: #ffffff !important;">Kirim Briefing Pagi</span>
                         </button>
                     </form>
                     <form method="POST" action="{{ route('panel.settings.test-notification') }}">
                         @csrf
                         <input type="hidden" name="type" value="reminder">
-                        <button type="submit" class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" @disabled(empty($user->telegram_chat_id))>
-                            <span>⏰</span>
-                            <span>Kirim Reminder Jadwal</span>
+                        <button type="submit"
+                                style="background-color: #4f46e5 !important; color: #ffffff !important;"
+                                class="inline-flex items-center justify-center gap-2
+                                    px-4 py-2.5 rounded-lg
+                                    text-xs font-bold
+                                    shadow-sm
+                                    hover:brightness-110 hover:shadow
+                                    active:scale-95
+                                    disabled:opacity-50
+                                    disabled:cursor-not-allowed
+                                    transition-all"
+                                @disabled(empty($user->telegram_chat_id))>
+                            <span class="text-sm">⏰</span>
+                            <span style="color: #ffffff !important;">Kirim Reminder Jadwal</span>
                         </button>
                     </form>
                 </div>

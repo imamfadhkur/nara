@@ -23,3 +23,4 @@ class ProcessNotificationsCommand extends Command
         return self::SUCCESS;
     }
 }
+

@@ -49,3 +49,4 @@ class SendBriefingCommand extends Command
         return self::FAILURE;
     }
 }
+

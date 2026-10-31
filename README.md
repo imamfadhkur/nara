@@ -56,6 +56,12 @@ NARA adalah Personal AI Agent yang bekerja bersama manusia untuk memahami, meren
     - `/done <id>` atau tautan 1-ketukan `/done_<id>`: tandai task selesai seketika.
     - `/done <kata kunci judul>`: penyelesaian pintar berdasarkan pencarian judul (*fuzzy match*).
     - `/help`: panduan lengkap perintah bot.
+- **Engine Notifikasi Terjadwal & Reminder Telegram (Bagian 7.8, 8.4, 9.10):**
+  - **Briefing Pagi (07:00):** Rekap jadwal hari ini, durasi total, task terlambat, tenggat terdekat, dan kapasitas mingguan.
+  - **Pengingat Jadwal (Reminder — 30 menit sebelum mulai):** Pemberitahuan sesi kerja mendatang lengkap dengan nama project, durasi, dan perintah satu ketukan `/done_<id>`.
+  - **Proteksi Tenang & Anti-Spam (7.8):** Jam tenang (22:00–06:30), batas maksimal 8 notifikasi per hari, dan kunci deduplikasi otomatis (`daily_briefing:{user_id}:{date}` & `reminder:schedule:{id}`).
+  - **Audit Logging Lengkap (9.10):** Pencatatan riwayat pengiriman pada tabel `notifications` dan `notification_logs`.
+  - **Uji Coba Manual 1-Klik:** Tombol uji coba langsung di halaman web Settings (`/panel/settings`) serta perintah CLI Artisan.
 
 ---
 
@@ -141,10 +147,44 @@ php artisan test
 ```
 
 **Status Pengujian Saat Ini:**
-- **66 Tests Passed** (242 Assertions)
+- **70 Tests Passed** (266 Assertions)
 - Cakupan:
   - Unit: Progress, WipGuard, Task Status Rules, 2FA Authenticator.
-  - Feature: Capacity 90% & Scenario 9.13 Overload Recovery, Telegram Webhook & Smart Done, Inbox Triage, Panel CRUD, DemoSeeder Accuracy, Backup Encryption.
+  - Feature: Capacity 90% & Scenario 9.13 Overload Recovery, Telegram Webhook & Smart Done, Inbox Triage, Panel CRUD, DemoSeeder Accuracy, Backup Encryption, Telegram Morning Briefing & Schedule Reminder Deduplication.
+
+---
+
+## ⏰ Worker Otomatis & Perintah Notifikasi
+
+NARA menggunakan Laravel Scheduler untuk menjalankan backup database harian, evaluasi jadwal reminder (tiap menit), serta pengiriman briefing pagi secara otomatis.
+
+### 1. Menjalankan Worker Scheduler
+Untuk menjalankan cron scheduler secara lokal saat pengembangan:
+```powershell
+php artisan schedule:work
+```
+*Pada server produksi, tambahkan baris berikut ke CRON sistem (`crontab -e`):*
+```bash
+* * * * * cd /path-to-nara && php artisan schedule:run >> /dev/null 2>&1
+```
+
+### 2. Uji Coba Langsung Notifikasi via Artisan CLI
+Anda dapat memicu pengiriman notifikasi ke Telegram secara instan tanpa menunggu jam jadwal:
+
+```powershell
+# 1. Kirim Briefing Pagi langsung ke Telegram pengguna:
+php artisan nara:briefing --force
+
+# 2. Kirim Pengingat Jadwal (Reminder) aktif terdekat:
+php artisan nara:remind --force
+
+# 3. Kirim Pengingat Jadwal untuk Schedule tertentu:
+php artisan nara:remind --schedule=11 --force
+
+# 4. Jalankan runner evaluasi jatuh tempo notifikasi (otomatis):
+php artisan nara:notifications
+```
+> *Tips:* Gunakan flag `--force` untuk mengabaikan jam tenang (22:00–06:30), batas kuota harian (8/hari), dan kunci deduplikasi saat melakukan pengujian.
 
 ---
 

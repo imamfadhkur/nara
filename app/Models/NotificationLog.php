@@ -45,3 +45,4 @@ class NotificationLog extends Model
         return $this->belongsTo(Notification::class);
     }
 }
+
