@@ -19,75 +19,101 @@
     {{-- Sidebar navigasi (Bagian 3.7 & 5.3) --}}
     <aside
         :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
-        class="fixed inset-y-0 left-0 z-40 w-64 flex flex-col bg-[#0b192c] text-slate-200 transition-transform duration-200 lg:static lg:translate-x-0"
+        class="fixed inset-y-0 left-0 z-40 w-72 flex flex-col bg-[#0b192c] text-slate-200 transition-transform duration-200 lg:static lg:translate-x-0"
     >
-        <div class="flex items-center justify-between px-4 h-16 border-b border-slate-800">
-            <a href="{{ route('panel.today') }}" class="flex items-center group py-1">
-                <img src="{{ asset('images/nara-2.png') }}" alt="NARA AI" class="h-10 w-auto max-w-[190px] object-contain transition-transform group-hover:scale-[1.02]">
+        {{-- Header brand: latar terang agar logo navy kontras dengan sidebar gelap --}}
+        <div class="relative px-4 pt-4 pb-3 bg-gradient-to-br from-white via-sky-50 to-indigo-100 border-b-4 border-cyan-400/70 shadow-md">
+            <button type="button" @click="sidebarOpen = false" class="lg:hidden absolute top-2 right-3 text-slate-500 hover:text-slate-900">✕</button>
+
+            <a href="{{ route('panel.today') }}" class="block group" title="NARA AI — Your Personal AI Agent">
+                {{-- Crop area transparan PNG (konten logo ±414×114 px dari 492×277 px) --}}
+                <div class="relative w-[208px] h-[58px] overflow-hidden mx-auto">
+                    <img src="{{ asset('images/nara-2.png') }}" alt="NARA AI"
+                         class="absolute max-w-none w-[247px] h-auto left-[-22px] top-[-45px] transition-transform duration-200 group-hover:scale-[1.03]">
+                </div>
             </a>
-            <button type="button" @click="sidebarOpen = false" class="lg:hidden text-slate-400 hover:text-white">✕</button>
+
+            <div class="mt-2 flex items-center justify-center gap-1.5 text-[10px] font-semibold">
+                <span class="px-2 py-0.5 rounded-full bg-[#0b192c] text-cyan-300 tracking-wide">v0.5</span>
+                <span class="px-2 py-0.5 rounded-full bg-white text-indigo-700 ring-1 ring-indigo-200">Fase 1 · Daily Use</span>
+            </div>
+            <p class="mt-1.5 text-center text-[11px] leading-snug text-slate-600">
+                Rencanakan, fokus, dan catat karya nyata setiap hari.
+            </p>
         </div>
 
-        <nav class="flex-1 px-3 py-4 space-y-1 text-sm overflow-y-auto">
-            <div class="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Navigasi Harian</div>
+        {{-- Sapaan & tanggal hari ini --}}
+        @php
+            $sidebarNow = now(auth()->user()?->displayTimezone() ?? config('nara.default_timezone'))->locale('id');
+            $sidebarHour = (int) $sidebarNow->format('H');
+            $sidebarGreeting = match (true) {
+                $sidebarHour < 11 => 'Selamat pagi',
+                $sidebarHour < 15 => 'Selamat siang',
+                $sidebarHour < 18 => 'Selamat sore',
+                default => 'Selamat malam',
+            };
+        @endphp
+        <div class="mx-3 mt-3 rounded-xl bg-gradient-to-r from-sky-900/60 to-indigo-900/50 ring-1 ring-sky-700/40 px-3 py-2.5">
+            <div class="text-xs text-slate-300">{{ $sidebarGreeting }},</div>
+            <div class="text-sm font-semibold text-white truncate">{{ auth()->user()?->name ?? 'Tamu' }} 👋</div>
+            <div class="mt-0.5 text-[11px] text-cyan-300/90">{{ $sidebarNow->translatedFormat('l, d F Y') }}</div>
+        </div>
 
+        <nav class="flex-1 px-3 py-4 space-y-0.5 text-sm overflow-y-auto">
             @php
                 $inboxPendingCount = auth()->user() ? \App\Models\InboxItem::where('user_id', auth()->id())->where('status', 'pending')->count() : 0;
+                $needs2fa = auth()->user() && ! auth()->user()->hasTwoFactorEnabled();
 
-                $dailyItems = [
-                    ['route' => 'panel.today', 'href' => route('panel.today'), 'label' => 'Today (Fokus)', 'badge' => null],
-                    ['route' => 'panel.inbox.*', 'href' => route('panel.inbox.index'), 'label' => 'Inbox (Capture)', 'badge' => $inboxPendingCount > 0 ? $inboxPendingCount : null],
-                    ['route' => 'panel.kanban.*', 'href' => route('panel.kanban.index'), 'label' => 'Kanban View', 'badge' => null],
-                    ['route' => 'panel.tasks.*', 'href' => route('panel.tasks.index'), 'label' => 'Tasks (Table)', 'badge' => null],
-                    ['route' => 'panel.outputs.*', 'href' => route('panel.outputs.index'), 'label' => 'Outputs (Karya)', 'badge' => null],
+                $navGroups = [
+                    'Navigasi Harian' => [
+                        ['route' => 'panel.today', 'href' => route('panel.today'), 'icon' => '🎯', 'label' => 'Today (Fokus)', 'desc' => 'Jadwal, prioritas & kapasitas', 'badge' => null],
+                        ['route' => 'panel.inbox.*', 'href' => route('panel.inbox.index'), 'icon' => '📥', 'label' => 'Inbox (Capture)', 'desc' => 'Tangkap ide & triase cepat', 'badge' => $inboxPendingCount > 0 ? $inboxPendingCount : null],
+                        ['route' => 'panel.kanban.*', 'href' => route('panel.kanban.index'), 'icon' => '🗂️', 'label' => 'Kanban View', 'desc' => 'Alur kerja visual per status', 'badge' => null],
+                        ['route' => 'panel.tasks.*', 'href' => route('panel.tasks.index'), 'icon' => '✅', 'label' => 'Tasks (Table)', 'desc' => 'Daftar lengkap & filter task', 'badge' => null],
+                        ['route' => 'panel.outputs.*', 'href' => route('panel.outputs.index'), 'icon' => '🏆', 'label' => 'Outputs (Karya)', 'desc' => 'Bukti hasil kerja nyata', 'badge' => null],
+                    ],
+                    'Komitmen & Goal' => [
+                        ['route' => 'panel.projects.*', 'href' => route('panel.projects.index'), 'icon' => '🚀', 'label' => 'Projects & WIP', 'desc' => 'Maks. 3 project aktif per slot', 'badge' => null],
+                        ['route' => 'panel.goals.*', 'href' => route('panel.goals.index'), 'icon' => '🎖️', 'label' => 'Goals', 'desc' => 'Target jangka menengah', 'badge' => null],
+                        ['route' => 'panel.life-domains.*', 'href' => route('panel.life-domains.index'), 'icon' => '🌱', 'label' => 'Life Domains', 'desc' => 'Area hidup yang dijaga', 'badge' => null],
+                    ],
+                    'Sistem' => [
+                        ['route' => 'panel.settings.*', 'href' => route('panel.settings.index'), 'icon' => '⚙️', 'label' => 'Settings & 2FA', 'desc' => 'Kapasitas, Telegram & keamanan', 'badge' => $needs2fa ? '!' : null],
+                    ],
                 ];
             @endphp
 
-            @foreach ($dailyItems as $item)
-                @php $active = request()->routeIs($item['route']); @endphp
-                <a href="{{ $item['href'] }}"
-                   class="flex items-center justify-between rounded-lg px-3 py-2 font-medium transition {{ $active ? 'bg-sky-600/20 text-cyan-300 ring-1 ring-cyan-400/30' : 'text-slate-300 hover:bg-slate-800/70 hover:text-white' }}">
-                    <span>{{ $item['label'] }}</span>
-                    @if ($item['badge'])
-                        <span class="rounded-full bg-cyan-500/20 px-2 py-0.5 text-xs text-cyan-300 font-semibold">{{ $item['badge'] }}</span>
-                    @endif
-                </a>
+            @foreach ($navGroups as $groupLabel => $items)
+                <div class="{{ $loop->first ? '' : 'pt-4' }} px-2 pb-1.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-wider text-slate-400">
+                    <span>{{ $groupLabel }}</span>
+                    <span class="flex-1 h-px bg-slate-700/60"></span>
+                </div>
+
+                @foreach ($items as $item)
+                    @php $active = request()->routeIs($item['route']); @endphp
+                    <a href="{{ $item['href'] }}"
+                       class="group flex items-center gap-3 rounded-lg px-2.5 py-2 transition {{ $active ? 'bg-sky-600/20 ring-1 ring-cyan-400/30' : 'hover:bg-slate-800/70' }}">
+                        <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-base {{ $active ? 'bg-cyan-400/20' : 'bg-slate-800/80 group-hover:bg-slate-700/80' }}">{{ $item['icon'] }}</span>
+                        <span class="min-w-0 flex-1">
+                            <span class="block font-medium leading-tight {{ $active ? 'text-cyan-300' : 'text-slate-200 group-hover:text-white' }}">{{ $item['label'] }}</span>
+                            <span class="block truncate text-[11px] leading-tight mt-0.5 {{ $active ? 'text-cyan-200/70' : 'text-slate-500 group-hover:text-slate-400' }}">{{ $item['desc'] }}</span>
+                        </span>
+                        @if ($item['badge'])
+                            <span class="shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold {{ $item['badge'] === '!' ? 'bg-amber-500/20 text-amber-300' : 'bg-cyan-500/20 text-cyan-300' }}">{{ $item['badge'] }}</span>
+                        @endif
+                    </a>
+                @endforeach
             @endforeach
-
-            <div class="pt-4 px-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Komitmen & Goal</div>
-
-            @php
-                $structureItems = [
-                    ['route' => 'panel.projects.*', 'href' => route('panel.projects.index'), 'label' => 'Projects & WIP'],
-                    ['route' => 'panel.goals.*', 'href' => route('panel.goals.index'), 'label' => 'Goals'],
-                    ['route' => 'panel.life-domains.*', 'href' => route('panel.life-domains.index'), 'label' => 'Life Domains'],
-                ];
-            @endphp
-
-            @foreach ($structureItems as $item)
-                @php $active = request()->routeIs($item['route']); @endphp
-                <a href="{{ $item['href'] }}"
-                   class="flex items-center justify-between rounded-lg px-3 py-2 font-medium transition {{ $active ? 'bg-sky-600/20 text-cyan-300 ring-1 ring-cyan-400/30' : 'text-slate-300 hover:bg-slate-800/70 hover:text-white' }}">
-                    <span>{{ $item['label'] }}</span>
-                </a>
-            @endforeach
-
-            <div class="pt-4 px-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-slate-400">Sistem</div>
-            <a href="{{ route('panel.settings.index') }}"
-               class="flex items-center justify-between rounded-lg px-3 py-2 font-medium transition {{ request()->routeIs('panel.settings.*') ? 'bg-sky-600/20 text-cyan-300 ring-1 ring-cyan-400/30' : 'text-slate-300 hover:bg-slate-800/70 hover:text-white' }}">
-                <span>Settings & 2FA</span>
-                @if (auth()->user() && ! auth()->user()->hasTwoFactorEnabled())
-                    <span class="rounded bg-amber-500/20 px-1.5 py-0.5 text-[10px] text-amber-300">!</span>
-                @endif
-            </a>
         </nav>
 
-        <div class="p-4 border-t border-slate-800 text-xs text-slate-400">
-            <div class="font-medium text-slate-200 truncate">{{ auth()->user()?->name }}</div>
-            <div class="truncate">{{ auth()->user()?->displayTimezone() }}</div>
-            <form method="POST" action="{{ route('logout') }}" class="mt-2">
+        <div class="p-4 border-t border-slate-800 bg-[#081322] text-xs text-slate-400 flex items-center justify-between gap-2">
+            <div class="min-w-0">
+                <div class="truncate">🕒 Zona: {{ auth()->user()?->displayTimezone() }}</div>
+                <div class="truncate text-[10px] text-slate-500 mt-0.5">© {{ date('Y') }} PT Imfar Manggala Nara</div>
+            </div>
+            <form method="POST" action="{{ route('logout') }}">
                 @csrf
-                <button type="submit" class="text-slate-400 hover:text-white underline">Keluar</button>
+                <button type="submit" class="shrink-0 rounded-lg px-2.5 py-1.5 bg-slate-800 text-slate-200 hover:bg-rose-600 hover:text-white transition">Keluar</button>
             </form>
         </div>
     </aside>
