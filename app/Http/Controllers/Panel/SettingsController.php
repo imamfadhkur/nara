@@ -5,11 +5,16 @@ namespace App\Http\Controllers\Panel;
 use App\Domain\Auth\TwoFactorAuthenticator;
 use App\Domain\Integrations\IntegrationService;
 use App\Domain\Notifications\NotificationService;
+use App\Domain\Scheduling\GoogleCalendarSyncService;
 use App\Domain\Settings\SettingService;
 use App\Http\Controllers\Controller;
+use App\Integrations\Google\GoogleCalendarClient;
 use App\Models\Schedule;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
@@ -155,6 +160,142 @@ class SettingsController extends Controller
         return redirect()
             ->route('panel.settings.index')
             ->with('toast', "Pengaturan integrasi Google Calendar berhasil diperbarui ({$statusStr}).");
+    }
+
+    /**
+     * Alihkan pengguna ke Google OAuth Consent Screen.
+     */
+    public function redirectToGoogle(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $integration = $this->integrations->getIntegration($user, IntegrationService::GOOGLE_CALENDAR);
+        $meta = $integration->meta ?? [];
+
+        $clientId = $meta['client_id'] ?? env('GOOGLE_CLIENT_ID');
+        $clientSecret = $meta['client_secret'] ?? env('GOOGLE_CLIENT_SECRET');
+
+        if (empty($clientId) || empty($clientSecret)) {
+            return redirect()->to(route('panel.settings.index') . '#integrations')
+                ->withErrors(['general' => 'Google Client ID dan Client Secret belum lengkap. Silakan isi dan simpan terlebih dahulu.']);
+        }
+
+        $state = Str::random(40);
+        session(['google_oauth_state' => $state]);
+
+        $redirectUri = route('panel.settings.integrations.google.callback');
+        $params = http_build_query([
+            'client_id' => $clientId,
+            'redirect_uri' => $redirectUri,
+            'response_type' => 'code',
+            'scope' => 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events',
+            'access_type' => 'offline',
+            'prompt' => 'consent select_account',
+            'state' => $state,
+        ]);
+
+        return redirect('https://accounts.google.com/o/oauth2/v2/auth?' . $params);
+    }
+
+    /**
+     * Tangani pengalihan balik (callback) dari Google OAuth 2.0.
+     */
+    public function handleGoogleCallback(
+        Request $request,
+        GoogleCalendarClient $googleClient,
+        GoogleCalendarSyncService $calendarSync,
+    ): RedirectResponse {
+        $user = $request->user();
+
+        if ($request->has('error')) {
+            return redirect()->to(route('panel.settings.index') . '#integrations')
+                ->withErrors(['general' => 'Otorisasi Google Calendar dibatalkan atau ditolak: ' . $request->query('error')]);
+        }
+
+        $savedState = session('google_oauth_state');
+        session()->forget('google_oauth_state');
+
+        if (empty($savedState) || $request->query('state') !== $savedState) {
+            return redirect()->to(route('panel.settings.index') . '#integrations')
+                ->withErrors(['general' => 'Validasi state keamanan OAuth gagal. Silakan ulangi otorisasi.']);
+        }
+
+        $code = $request->query('code');
+        if (empty($code)) {
+            return redirect()->to(route('panel.settings.index') . '#integrations')
+                ->withErrors(['general' => 'Kode otorisasi dari Google tidak ditemukan.']);
+        }
+
+        $integration = $this->integrations->getIntegration($user, IntegrationService::GOOGLE_CALENDAR);
+        $meta = $integration->meta ?? [];
+        $clientId = $meta['client_id'] ?? env('GOOGLE_CLIENT_ID');
+        $clientSecret = $meta['client_secret'] ?? env('GOOGLE_CLIENT_SECRET');
+        $redirectUri = route('panel.settings.integrations.google.callback');
+
+        try {
+            $response = Http::asForm()->timeout(15)->post('https://oauth2.googleapis.com/token', [
+                'code' => $code,
+                'client_id' => $clientId,
+                'client_secret' => $clientSecret,
+                'redirect_uri' => $redirectUri,
+                'grant_type' => 'authorization_code',
+            ]);
+
+            if (! $response->successful()) {
+                $errorDesc = $response->json('error_description') ?? $response->body();
+
+                return redirect()->to(route('panel.settings.index') . '#integrations')
+                    ->withErrors(['general' => "Gagal otorisasi dengan Google ({$response->status()}): {$errorDesc}"]);
+            }
+
+            $tokenData = $response->json();
+            $accessToken = $tokenData['access_token'];
+            $refreshToken = $tokenData['refresh_token'] ?? $integration->refresh_token;
+            $expiresIn = (int) ($tokenData['expires_in'] ?? 3600);
+            $expiresAt = Carbon::now('UTC')->addSeconds($expiresIn - 60);
+
+            $integration->update([
+                'is_active' => true,
+                'access_token' => $accessToken,
+                'refresh_token' => $refreshToken,
+                'expires_at' => $expiresAt,
+            ]);
+
+            // Buat atau pastikan kalender sekunder khusus 'NARA' di Google Calendar pengguna
+            $calendarName = $meta['calendar_id'] ?: 'NARA';
+            $googleClient->ensureDedicatedCalendar($user, $calendarName);
+
+            // Sinkronkan seluruh jadwal yang ada di NARA ke Google Calendar
+            $synced = $calendarSync->syncAll($user);
+            $calendarSync->pullExternalBusyBlocks($user, Carbon::now('UTC')->subDays(7), Carbon::now('UTC')->addDays(30));
+
+            return redirect()->to(route('panel.settings.index') . '#integrations')
+                ->with('status', "Berhasil menghubungkan Akun Google! Kalender '{$calendarName}' aktif. {$synced} sesi jadwal telah disinkronkan ke Google Calendar.");
+        } catch (\Throwable $e) {
+            return redirect()->to(route('panel.settings.index') . '#integrations')
+                ->withErrors(['general' => 'Terjadi kesalahan saat menghubungkan ke Google: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Putuskan akun Google Calendar.
+     */
+    public function disconnectGoogle(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $integration = $this->integrations->getIntegration($user, IntegrationService::GOOGLE_CALENDAR);
+
+        $meta = $integration->meta ?? [];
+        unset($meta['google_calendar_id']);
+
+        $integration->update([
+            'access_token' => null,
+            'refresh_token' => null,
+            'expires_at' => null,
+            'meta' => $meta,
+        ]);
+
+        return redirect()->to(route('panel.settings.index') . '#integrations')
+            ->with('status', 'Koneksi akun Google Calendar berhasil diputuskan. Kalender kembali ke Mode Lokal.');
     }
 
     /**

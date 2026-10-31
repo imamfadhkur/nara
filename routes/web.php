@@ -83,6 +83,9 @@ Route::middleware(['auth', 'two-factor'])
         Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
         Route::post('settings/integrations/telegram', [SettingsController::class, 'updateTelegramIntegration'])->name('settings.integrations.telegram');
         Route::post('settings/integrations/google', [SettingsController::class, 'updateGoogleIntegration'])->name('settings.integrations.google');
+        Route::get('settings/integrations/google/redirect', [SettingsController::class, 'redirectToGoogle'])->name('settings.integrations.google.redirect');
+        Route::get('settings/integrations/google/callback', [SettingsController::class, 'handleGoogleCallback'])->name('settings.integrations.google.callback');
+        Route::post('settings/integrations/google/disconnect', [SettingsController::class, 'disconnectGoogle'])->name('settings.integrations.google.disconnect');
         Route::post('settings/integrations/{provider}/toggle', [SettingsController::class, 'toggleIntegration'])->name('settings.integrations.toggle');
         Route::post('settings/test-notification', [SettingsController::class, 'testNotification'])->name('settings.test-notification');
         Route::post('settings/two-factor', [SettingsController::class, 'enableTwoFactor'])->name('settings.two-factor.enable');

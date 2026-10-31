@@ -88,8 +88,12 @@ class IntegrationService
      *     client_id: string,
      *     client_secret: string,
      *     calendar_id: string,
+     *     google_calendar_id: string,
      *     sync_mode: string,
-     *     is_connected: bool
+     *     has_credentials: bool,
+     *     is_authorized: bool,
+     *     is_connected: bool,
+     *     expires_at: \Illuminate\Support\Carbon|null
      * }
      */
     public function getGoogleCalendarConfig(User $user): array
@@ -98,15 +102,21 @@ class IntegrationService
         $meta = $integration->meta ?? [];
 
         $clientId = (string) ($meta['client_id'] ?? env('GOOGLE_CLIENT_ID', ''));
-        $hasToken = ! empty($integration->access_token) || ! empty($meta['simulation_mode']);
+        $clientSecret = (string) ($meta['client_secret'] ?? env('GOOGLE_CLIENT_SECRET', ''));
+        $hasCredentials = ! empty($clientId) && ! empty($clientSecret);
+        $hasToken = ! empty($integration->access_token);
 
         return [
             'is_active' => (bool) $integration->is_active,
             'client_id' => $clientId,
-            'client_secret' => (string) ($meta['client_secret'] ?? env('GOOGLE_CLIENT_SECRET', '')),
+            'client_secret' => $clientSecret,
             'calendar_id' => (string) ($meta['calendar_id'] ?? 'NARA'),
+            'google_calendar_id' => (string) ($meta['google_calendar_id'] ?? ''),
             'sync_mode' => (string) ($meta['sync_mode'] ?? 'two_way'),
-            'is_connected' => $integration->is_active && ($hasToken || ! empty($clientId)),
+            'has_credentials' => $hasCredentials,
+            'is_authorized' => $hasToken,
+            'is_connected' => $integration->is_active && $hasToken,
+            'expires_at' => $integration->expires_at,
         ];
     }
 

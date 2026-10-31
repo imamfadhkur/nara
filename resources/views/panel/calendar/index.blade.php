@@ -4,18 +4,26 @@
             <p class="text-sm text-slate-600">
                 Alokasi waktu kerja deterministik terintegrasi dua arah dengan Google Calendar dan deteksi konflik.
             </p>
-            <div class="flex items-center gap-3 mt-1.5 text-xs">
-                @if ($isGoogleEnabled)
+            <div class="flex items-center gap-3 mt-1.5 text-xs flex-wrap">
+                @if ($isGoogleEnabled && $googleConfig['is_authorized'])
                     <span class="inline-flex items-center gap-1.5 text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200 font-medium">
                         <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
                         Google Calendar Aktif ({{ $googleConfig['calendar_id'] }})
                     </span>
                     <form action="{{ route('panel.calendar.sync') }}" method="POST" class="inline">
                         @csrf
-                        <button type="submit" class="text-xs text-sky-600 hover:text-sky-800 underline font-medium">
+                        <button type="submit" class="text-xs text-sky-600 hover:text-sky-800 underline font-medium cursor-pointer">
                             ⟳ Sinkronkan Sekarang
                         </button>
                     </form>
+                @elseif ($isGoogleEnabled && ! $googleConfig['is_authorized'])
+                    <span class="inline-flex items-center gap-1.5 text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 font-medium">
+                        <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                        Google Calendar Belum Diotorisasi
+                    </span>
+                    <a href="{{ route('panel.settings.index') }}#integrations" class="text-xs text-amber-800 font-bold hover:underline">
+                        🔑 Hubungkan Akun Google di Pengaturan →
+                    </a>
                 @else
                     <span class="inline-flex items-center gap-1.5 text-slate-700 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-300 font-medium">
                         🏠 Mode Kalender Lokal (Integrasi Google dinonaktifkan di Pengaturan)

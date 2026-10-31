@@ -84,7 +84,7 @@ class GoogleCalendarSyncService
                 ],
             ];
 
-            if ($calendarEvent->google_event_id && ! str_starts_with($calendarEvent->google_event_id, 'local_')) {
+            if ($calendarEvent->google_event_id && ! str_starts_with($calendarEvent->google_event_id, 'local_') && ! str_starts_with($calendarEvent->google_event_id, 'gcal_sim_')) {
                 // Update event yang sudah ada
                 $result = $this->googleClient->updateEvent($user, $calendarEvent->google_event_id, $eventPayload);
                 $googleEventId = $result['id'] ?? $calendarEvent->google_event_id;
@@ -95,8 +95,9 @@ class GoogleCalendarSyncService
             }
 
             $calendarConfig = $this->integrations->getGoogleCalendarConfig($user);
+            $targetCalId = $calendarConfig['google_calendar_id'] ?: ($calendarConfig['calendar_id'] ?: 'primary');
             $calendarEvent->fill([
-                'google_calendar_id' => $calendarConfig['calendar_id'] ?: 'primary',
+                'google_calendar_id' => $targetCalId,
                 'google_event_id' => $googleEventId,
                 'sync_status' => 'synced',
                 'last_synced_at' => Carbon::now('UTC'),
@@ -126,7 +127,8 @@ class GoogleCalendarSyncService
 
         if ($this->integrations->isGoogleCalendarEnabled($user) &&
             $event->google_event_id &&
-            ! str_starts_with($event->google_event_id, 'local_')
+            ! str_starts_with($event->google_event_id, 'local_') &&
+            ! str_starts_with($event->google_event_id, 'gcal_sim_')
         ) {
             try {
                 $this->googleClient->deleteEvent($user, $event->google_event_id);

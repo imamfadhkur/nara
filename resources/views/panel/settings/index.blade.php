@@ -403,10 +403,15 @@
                         </div>
                     </div>
                     <div>
-                        @if ($isGoogleEnabled)
+                        @if ($googleConfig['is_connected'])
                             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800">
                                 <span class="h-2 w-2 rounded-full bg-emerald-600 animate-pulse"></span>
-                                Aktif (Rules On)
+                                Terhubung & Aktif (Google Calendar)
+                            </span>
+                        @elseif ($isGoogleEnabled && ! $googleConfig['is_authorized'])
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-100 text-amber-800">
+                                <span class="h-2 w-2 rounded-full bg-amber-500"></span>
+                                Belum Diotorisasi (OAuth Diperlukan)
                             </span>
                         @else
                             <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-slate-200 text-slate-700">
@@ -417,7 +422,7 @@
                 </div>
 
                 {{-- Form Konfigurasi Google Calendar --}}
-                <form method="POST" action="{{ route('panel.settings.integrations.google') }}" class="space-y-4 mb-6">
+                <form method="POST" action="{{ route('panel.settings.integrations.google') }}" class="space-y-4 mb-5">
                     @csrf
                     <div class="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200/80">
                         <label class="flex items-center gap-2 cursor-pointer">
@@ -459,7 +464,7 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-between pt-2">
+                    <div class="flex items-center justify-between pt-1">
                         <div class="flex items-center gap-2">
                             <a href="{{ route('panel.calendar.index') }}" class="nara-btn-secondary text-xs py-1.5 px-3">
                                 📅 Buka Kalender NARA →
@@ -470,6 +475,77 @@
                         </button>
                     </div>
                 </form>
+
+                {{-- Status Koneksi & Tombol Otorisasi OAuth --}}
+                @if ($googleConfig['is_connected'])
+                    <div class="mb-5 p-4 bg-emerald-50 rounded-xl border border-emerald-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs">
+                        <div>
+                            <p class="font-bold text-emerald-900 flex items-center gap-1.5">
+                                <span>✅</span>
+                                <span>Akun Google Terhubung & Siap Sinkronisasi</span>
+                            </p>
+                            <p class="text-emerald-700 text-[11px] mt-0.5">
+                                Kalender Terdedikasi: <strong>{{ $googleConfig['calendar_id'] }}</strong>
+                                @if ($googleConfig['google_calendar_id'])
+                                    <span class="text-emerald-600 font-mono text-[10px]">({{ $googleConfig['google_calendar_id'] }})</span>
+                                @endif
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <form method="POST" action="{{ route('panel.calendar.sync') }}">
+                                @csrf
+                                <button type="submit" class="nara-btn-secondary text-xs py-1.5 px-3 bg-white font-medium hover:bg-emerald-50">
+                                    🔄 Sinkronkan Semua Jadwal
+                                </button>
+                            </form>
+                            <form method="POST" action="{{ route('panel.settings.integrations.google.disconnect') }}">
+                                @csrf
+                                <button type="submit" class="text-xs text-rose-600 hover:text-rose-800 hover:underline px-2 py-1 font-medium" onclick="return confirm('Apakah Anda yakin ingin memutuskan akun Google Calendar?')">
+                                    Putuskan Akun
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                @else
+                    <div class="mb-5 p-4 bg-amber-50/80 rounded-xl border border-amber-200 text-xs space-y-3">
+                        <div class="flex items-start gap-2.5">
+                            <span class="text-xl shrink-0">⚠️</span>
+                            <div>
+                                <h4 class="font-bold text-amber-900 text-sm">Otorisasi Akun Google Diperlukan</h4>
+                                <p class="text-amber-800 text-xs mt-0.5">
+                                    Kredensial Client ID & Secret telah disimpan, namun Anda <strong>belum memberikan izin OAuth</strong> ke akun Google Anda. Agar tugas dan jadwal yang Anda alokasikan di NARA otomatis muncul di <code>calendar.google.com</code>, lakukan otorisasi di bawah ini.
+                                </p>
+                            </div>
+                        </div>
+
+                        <div class="p-3 bg-white rounded-lg border border-amber-200/80 text-[11px] text-slate-700 space-y-1.5">
+                            <span class="font-bold text-slate-900 block">
+                                📌 Langkah Penting di Google Cloud Console:
+                            </span>
+                            <p>
+                                Pastikan URL pengalihan (Authorized Redirect URI) di bawah telah didaftarkan pada kredensial <strong>"NARA Web client"</strong> di Google Cloud Console:
+                            </p>
+                            <div class="flex items-center gap-2">
+                                <input
+                                    type="text"
+                                    readonly
+                                    value="{{ route('panel.settings.integrations.google.callback') }}"
+                                    class="bg-slate-50 text-slate-800 px-3 py-1.5 rounded text-xs select-all font-mono border border-slate-300 flex-1"
+                                >
+                            </div>
+                            <span class="text-[10px] text-slate-500 block">
+                                (Menu: <em>Google Cloud Console</em> &gt; <em>Credentials</em> &gt; Klik <em>OAuth 2.0 Client ID</em> &gt; Tambah ke <em>Authorized redirect URIs</em> &gt; Klik <em>Save</em>).
+                            </span>
+                        </div>
+
+                        <div class="pt-1 flex items-center gap-2">
+                            <a href="{{ route('panel.settings.integrations.google.redirect') }}" class="nara-btn-primary text-xs py-2 px-4 shadow-sm flex items-center gap-2 font-bold bg-amber-600 hover:bg-amber-700 text-white">
+                                <span>🔑</span>
+                                <span>Hubungkan Akun Google (Otorisasi Sekarang) →</span>
+                            </a>
+                        </div>
+                    </div>
+                @endif
 
                 {{-- Panduan Menghubungkan Google Calendar --}}
                 <div class="rounded-xl border border-emerald-200 bg-emerald-50/40 p-4" x-data="{ openGuide: false }">
@@ -506,16 +582,28 @@
                         <div class="flex items-start gap-2">
                             <span class="font-bold text-emerald-700 shrink-0">4.</span>
                             <div>
-                                <strong>Buat Kredensial OAuth 2.0:</strong>
+                                <strong>Buat Kredensial OAuth 2.0 & Masukkan Redirect URI:</strong>
                                 Buka menu <em>APIs & Services</em> &gt; <em>Credentials</em> &gt; <strong>Create Credentials</strong> &gt; <strong>OAuth Client ID</strong>.
-                                Pilih tipe <em>Web Application</em>, salin <strong>Client ID</strong> dan <strong>Client Secret</strong> ke formulir di atas.
+                                Pilih tipe <em>Web Application</em>. Pada bagian <strong>Authorized redirect URIs</strong> (URI pengalihan yang diizinkan), masukkan:
+                                <div class="my-1.5 p-2 bg-slate-100 rounded text-[11px] font-mono text-slate-800 break-all select-all border border-slate-200">
+                                    {{ route('panel.settings.integrations.google.callback') }}
+                                </div>
+                                Simpan di Google Console, lalu salin <strong>Client ID</strong> dan <strong>Client Secret</strong> ke formulir di atas dan klik <strong>Simpan Google Config</strong>.
                             </div>
                         </div>
 
                         <div class="flex items-start gap-2">
                             <span class="font-bold text-emerald-700 shrink-0">5.</span>
                             <div>
-                                <strong>Mode Simulasi / Tanpa Kredensial:</strong> Jika Anda sedang mengembangkan atau belum memasang kredensial Google, NARA secara cerdas mengaktifkan <em>Simulation Mode</em> otomatis, atau beralih ke Mode Kalender Lokal (`🏠`), sehingga kalender tetap berfungsi penuh dan dapat diuji tanpa hambatan autentikasi.
+                                <strong>Otorisasi Akun Google (Langkah Terakhir):</strong>
+                                Klik tombol <strong>Hubungkan Akun Google (Otorisasi Sekarang)</strong>. Anda akan diarahkan ke layar izin Google. Pilih akun Google Anda dan berikan izin kalender. Setelah selesai, NARA akan otomatis membuat kalender sekunder bernama <code>NARA</code> dan menyinkronkan seluruh jadwal Anda.
+                            </div>
+                        </div>
+
+                        <div class="flex items-start gap-2">
+                            <span class="font-bold text-emerald-700 shrink-0">6.</span>
+                            <div>
+                                <strong>Mode Simulasi / Tanpa Kredensial:</strong> Jika Anda belum menghubungkan akun Google atau menonaktifkan sakelar integrasi, NARA secara cerdas beralih ke Mode Kalender Lokal (`🏠`), sehingga Anda tetap dapat menjadwalkan task tanpa hambatan.
                             </div>
                         </div>
                     </div>
