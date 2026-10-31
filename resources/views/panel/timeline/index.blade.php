@@ -57,19 +57,19 @@
                                     </span>
                                 @endif
                             </div>
-                            @if ($proj->outcome)
+                            @if ($proj->definition_of_done)
                                 <p class="text-xs text-slate-600 line-clamp-1 italic">
-                                    🎯 Target Output: {{ $proj->outcome }}
+                                    🎯 Definition of Done: {{ $proj->definition_of_done }}
                                 </p>
                             @endif
                         </div>
 
                         {{-- Tanggal Horizon --}}
                         <div class="text-right text-xs text-slate-500 shrink-0">
-                            @if ($proj->target_date)
-                                <div>Tenggat: <strong class="text-slate-800">{{ $proj->target_date->format('d M Y') }}</strong></div>
+                            @if ($proj->due_date)
+                                <div>Tenggat: <strong class="text-slate-800">{{ $proj->due_date->format('d M Y') }}</strong></div>
                                 @php
-                                    $diff = (int) now()->startOfDay()->diffInDays($proj->target_date->startOfDay(), false);
+                                    $diff = (int) now()->startOfDay()->diffInDays($proj->due_date->startOfDay(), false);
                                 @endphp
                                 <div class="text-[11px] {{ $diff < 0 ? 'text-rose-600 font-bold' : ($diff <= 7 ? 'text-amber-600 font-medium' : 'text-slate-400') }}">
                                     @if ($diff < 0)
@@ -139,3 +139,4 @@
         </div>
     @endif
 </x-panel-layout>
+

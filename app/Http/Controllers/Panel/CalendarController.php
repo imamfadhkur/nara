@@ -162,3 +162,4 @@ class CalendarController extends Controller
         return back()->with('status', "Sinkronisasi berhasil! {$syncedCount} sesi diperbarui, {$busyCount} blok sibuk eksternal disinkronkan.");
     }
 }
+

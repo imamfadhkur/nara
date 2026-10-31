@@ -73,6 +73,7 @@ class KanbanController extends Controller
 
         // One-Click Output Capture (D-16 & Bagian 5.4)
         if ($toStatus === TaskStatus::Done && $request->boolean('record_output') && $request->filled('output_title')) {
+            $uploadedFile = $request->file('output_file') ?? $request->file('file');
             app(\App\Domain\Outputs\OutputService::class)->record($request->user(), [
                 'title' => $request->string('output_title')->toString(),
                 'output_type' => $request->string('output_type')->toString() ?: \App\Support\Enums\OutputType::Other,
@@ -80,7 +81,7 @@ class KanbanController extends Controller
                 'task_id' => $task->id,
                 'evidence_url' => $request->string('evidence_url')->toString() ?: null,
                 'produced_at' => now()->toDateString(),
-            ], $request->file('output_file'));
+            ], $uploadedFile);
         }
 
         if ($request->wantsJson()) {

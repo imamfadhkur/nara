@@ -82,6 +82,12 @@ class Project extends Model
         return $this->belongsTo(Goal::class);
     }
 
+    /** Life domain via Goal (hirarki: Life Domain -> Goal -> Project). */
+    public function getLifeDomainAttribute(): ?LifeDomain
+    {
+        return $this->goal?->lifeDomain;
+    }
+
     /** @return HasMany<Task, $this> */
     public function tasks(): HasMany
     {

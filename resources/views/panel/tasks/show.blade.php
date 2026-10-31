@@ -148,6 +148,63 @@
         </form>
     </div>
 
+    {{-- Bukti Output / Hasil Karya Task (D-16) --}}
+    @if ($task->outputs->isNotEmpty())
+        <div class="nara-card p-5 mb-6 border-l-4 border-l-emerald-500">
+            <div class="flex items-center justify-between mb-3">
+                <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-800 flex items-center gap-2">
+                    <span>🏆 Bukti Karya / Output Terkait ({{ $task->outputs->count() }})</span>
+                </h2>
+                <button type="button" @click="openOutputModal = true" class="text-xs text-emerald-700 hover:text-emerald-900 font-semibold">
+                    + Tambah Bukti Lain
+                </button>
+            </div>
+
+            <div class="space-y-3">
+                @foreach ($task->outputs as $out)
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div>
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="font-bold text-slate-900">{{ $out->title }}</span>
+                                <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                    {{ $out->output_type->label() }}
+                                </span>
+                            </div>
+                            @if ($out->evidence_url)
+                                <a href="{{ $out->evidence_url }}" target="_blank" rel="noopener noreferrer" class="text-sky-600 hover:underline block mt-1 truncate max-w-md">
+                                    🔗 {{ $out->evidence_url }}
+                                </a>
+                            @endif
+                            @if ($out->note)
+                                <p class="text-slate-500 mt-1 italic">{{ $out->note }}</p>
+                            @endif
+
+                            @if ($out->files->isNotEmpty())
+                                <div class="mt-2 flex items-center gap-2 flex-wrap">
+                                    @foreach ($out->files as $file)
+                                        <div class="inline-flex items-center gap-1.5 bg-white px-2 py-1 rounded border border-slate-200 text-[11px] shadow-2xs">
+                                            <span>📎</span>
+                                            <a href="{{ route('panel.outputs.download', [$out, $file]) }}" class="font-medium text-slate-800 hover:text-sky-700 truncate max-w-[150px]" title="Unduh {{ $file->file_name }}">
+                                                {{ $file->file_name }}
+                                            </a>
+                                            <a href="{{ route('panel.outputs.view', [$out, $file]) }}" target="_blank" class="text-sky-600 hover:text-sky-800 ml-1 font-bold" title="Buka berkas di tab baru">
+                                                ↗
+                                            </a>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @endif
+                        </div>
+
+                        <div class="text-right text-[11px] text-slate-400 shrink-0">
+                            {{ $out->produced_at->format('d M Y') }}
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     {{-- Riwayat Aktivitas Task (Bagian 6.9 & 6.10) --}}
     <div class="nara-card p-5">
         <h2 class="text-sm font-semibold uppercase tracking-wider text-slate-700 mb-3">
@@ -189,7 +246,7 @@
                 <button @click="openDoneModal = false" class="text-slate-400 hover:text-slate-600">✕</button>
             </div>
 
-            <form method="POST" action="{{ route('panel.kanban.tasks.move', $task) }}" class="space-y-4 text-sm" x-data="{ wantOutput: true }">
+            <form method="POST" action="{{ route('panel.kanban.tasks.move', $task) }}" class="space-y-4 text-sm" x-data="{ wantOutput: true }" enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" name="status" value="done">
 
@@ -225,6 +282,12 @@
                             <input type="url" name="evidence_url" placeholder="https://github.com/... atau deliverable"
                                    class="w-full rounded-lg border-slate-300 bg-white text-xs focus:border-sky-600 focus:ring-sky-500">
                         </div>
+                        <div>
+                            <label class="block text-[11px] font-semibold text-slate-700 uppercase tracking-wider mb-0.5">Unggah Berkas Bukti (File Upload)</label>
+                            <input type="file" name="output_file"
+                                   class="w-full text-xs text-slate-600 file:mr-2 file:py-1 file:px-2.5 file:rounded-md file:border-0 file:text-xs file:font-semibold file:bg-white file:text-sky-700 hover:file:bg-slate-100 border border-slate-300 rounded-lg p-1 bg-white cursor-pointer">
+                            <p class="text-[10px] text-slate-400 mt-0.5">Mendukung PDF, Word/Excel, gambar, ZIP, dll. (Maks. 25 MB).</p>
+                        </div>
                     </div>
                 </div>
 
@@ -244,7 +307,7 @@
                 <button @click="openOutputModal = false" class="text-slate-400 hover:text-slate-600">✕</button>
             </div>
 
-            <form method="POST" action="{{ route('panel.outputs.store') }}" class="space-y-4 text-sm">
+            <form method="POST" action="{{ route('panel.outputs.store') }}" class="space-y-4 text-sm" enctype="multipart/form-data">
                 @csrf
                 <input type="hidden" name="project_id" value="{{ $task->project_id }}">
                 <input type="hidden" name="task_id" value="{{ $task->id }}">
@@ -269,6 +332,13 @@
                     <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Tautan Bukti / URL</label>
                     <input type="url" name="evidence_url" placeholder="https://github.com/... atau deliverable"
                            class="w-full rounded-lg border-slate-300 text-sm focus:border-sky-600 focus:ring-sky-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-slate-700 uppercase tracking-wider mb-1">Unggah Berkas Bukti (File Upload)</label>
+                    <input type="file" name="file"
+                           class="w-full text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-sky-50 file:text-sky-700 hover:file:bg-sky-100 border border-slate-300 rounded-lg p-1.5 cursor-pointer bg-slate-50/50">
+                    <p class="text-[11px] text-slate-500 mt-1">Mendukung PDF, Word/Excel, gambar, arsip ZIP, kode, dll. (Maks. 25 MB).</p>
                 </div>
 
                 <div>

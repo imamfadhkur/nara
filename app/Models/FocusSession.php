@@ -56,3 +56,4 @@ class FocusSession extends Model
         return $this->belongsTo(Task::class);
     }
 }
+

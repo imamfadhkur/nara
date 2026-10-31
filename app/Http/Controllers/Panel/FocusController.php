@@ -101,3 +101,4 @@ class FocusController extends Controller
             ->with('status', "Sesi fokus {$duration} menit berhasil dicatat untuk task \"{$task->title}\"!");
     }
 }
+

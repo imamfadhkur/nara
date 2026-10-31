@@ -312,5 +312,45 @@ class PanelCrudTest extends TestCase
             'value' => '1800',
         ]);
     }
+
+    public function test_task_detail_renders_outputs_and_file_upload(): void
+    {
+        Storage::fake('local');
+
+        $project = Project::create([
+            'user_id' => $this->user->id,
+            'name' => 'Project Task Output Detail',
+            'category' => ProjectCategory::Feature,
+            'origin' => ProjectOrigin::Personal,
+            'status' => ProjectStatus::Active,
+            'wip_slot' => WipSlot::Personal,
+        ]);
+
+        $task = Task::create([
+            'project_id' => $project->id,
+            'title' => 'Task dengan Output Berkas',
+            'status' => TaskStatus::Done,
+            'priority' => TaskPriority::Normal,
+            'estimated_minutes' => 60,
+        ]);
+
+        $file = UploadedFile::fake()->create('draft_arsitektur.pdf', 300, 'application/pdf');
+
+        $this->actingAs($this->user)->post(route('panel.outputs.store'), [
+            'project_id' => $project->id,
+            'task_id' => $task->id,
+            'title' => 'Dokumen Draf Arsitektur',
+            'output_type' => 'pdf',
+            'produced_at' => now()->toDateString(),
+            'file' => $file,
+        ])->assertRedirect();
+
+        // Render detail task
+        $response = $this->actingAs($this->user)->get(route('panel.tasks.show', $task));
+        $response->assertOk();
+        $response->assertSee('Dokumen Draf Arsitektur');
+        $response->assertSee('draft_arsitektur.pdf');
+        $response->assertSee('Unggah Berkas Bukti (File Upload)');
+    }
 }
 

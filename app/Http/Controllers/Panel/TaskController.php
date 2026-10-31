@@ -92,7 +92,7 @@ class TaskController extends Controller
     public function show(Task $task): View
     {
         $this->authorize('view', $task);
-        $task->load(['project.goal.lifeDomain', 'subtasks']);
+        $task->load(['project.goal.lifeDomain', 'subtasks', 'outputs.files']);
 
         $logs = ActivityLog::query()
             ->where('subject_type', $task->getMorphClass())

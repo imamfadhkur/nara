@@ -16,12 +16,12 @@ class TimelineController extends Controller
 
         $projects = Project::query()
             ->where('user_id', $user->id)
-            ->with(['lifeDomain', 'goal', 'tasks' => function ($q) {
+            ->with(['goal.lifeDomain', 'tasks' => function ($q) {
                 $q->orderByRaw("CASE WHEN status = 'done' THEN 1 ELSE 0 END")
                   ->orderBy('due_date');
             }])
             ->orderByRaw("CASE WHEN status = 'active' THEN 0 WHEN status = 'on_hold' THEN 1 ELSE 2 END")
-            ->orderBy('target_date')
+            ->orderBy('due_date')
             ->get();
 
         $projectRoadmap = $projects->map(function (Project $project) {
@@ -46,3 +46,4 @@ class TimelineController extends Controller
         ]);
     }
 }
+

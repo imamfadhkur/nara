@@ -22,7 +22,7 @@ class MatrixController extends Controller
         $tasks = Task::query()
             ->whereHas('project', fn ($q) => $q->where('user_id', $user->id)->whereNull('deleted_at'))
             ->whereNotIn('status', [TaskStatus::Done, TaskStatus::Cancelled])
-            ->with(['project.lifeDomain', 'subtasks'])
+            ->with(['project.goal.lifeDomain', 'subtasks'])
             ->orderBy('due_date')
             ->get();
 
@@ -50,3 +50,4 @@ class MatrixController extends Controller
         ]);
     }
 }
+
