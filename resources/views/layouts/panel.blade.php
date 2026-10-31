@@ -86,6 +86,7 @@
                     ],
                     'Sistem' => [
                         ['route' => 'panel.settings.*', 'href' => route('panel.settings.index'), 'icon' => '⚙️', 'label' => 'Settings & Integrasi', 'desc' => 'Kapasitas, Telegram & Google Cal', 'badge' => $needs2fa ? '!' : null],
+                        ['route' => 'panel.docs.*', 'href' => route('panel.docs.index'), 'icon' => '📚', 'label' => 'Panduan & Dokumentasi', 'desc' => 'Manual API, fitur & troubleshooting', 'badge' => null],
                     ],
                 ];
             @endphp

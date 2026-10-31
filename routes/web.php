@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Panel\CalendarController;
+use App\Http\Controllers\Panel\DocumentationController;
 use App\Http\Controllers\Panel\FocusController;
 use App\Http\Controllers\Panel\GoalController;
 use App\Http\Controllers\Panel\InboxController;
@@ -92,6 +93,15 @@ Route::middleware(['auth', 'two-factor'])
         Route::post('settings/two-factor/confirm', [SettingsController::class, 'confirmTwoFactor'])->name('settings.two-factor.confirm');
         Route::post('settings/two-factor/recovery-codes', [SettingsController::class, 'regenerateRecoveryCodes'])->name('settings.two-factor.recovery');
         Route::delete('settings/two-factor', [SettingsController::class, 'disableTwoFactor'])->name('settings.two-factor.disable');
+
+        // Dokumentasi & Basis Pengetahuan Sistem (Fase 2)
+        Route::get('docs', [DocumentationController::class, 'index'])->name('docs.index');
+        Route::get('docs/create', [DocumentationController::class, 'create'])->name('docs.create');
+        Route::post('docs', [DocumentationController::class, 'store'])->name('docs.store');
+        Route::get('docs/{article:slug}', [DocumentationController::class, 'show'])->name('docs.show');
+        Route::get('docs/{article}/edit', [DocumentationController::class, 'edit'])->name('docs.edit');
+        Route::put('docs/{article}', [DocumentationController::class, 'update'])->name('docs.update');
+        Route::delete('docs/{article}', [DocumentationController::class, 'destroy'])->name('docs.destroy');
     });
 
 Route::middleware('auth')->group(function () {

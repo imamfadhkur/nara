@@ -150,3 +150,4 @@ test('disconnects google calendar integration and clears tokens', function () {
     expect($integration->refresh_token)->toBeNull();
     expect($integration->meta)->not->toHaveKey('google_calendar_id');
 });
+
