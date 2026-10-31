@@ -3,8 +3,10 @@
 namespace App\Http\Controllers\Panel;
 
 use App\Domain\Auth\TwoFactorAuthenticator;
+use App\Domain\Notifications\NotificationService;
 use App\Domain\Settings\SettingService;
 use App\Http\Controllers\Controller;
+use App\Models\Schedule;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -56,6 +58,8 @@ class SettingsController extends Controller
             'wip_limit_per_slot' => ['required', 'integer', 'min:1', 'max:10'],
             'stagnation_days' => ['required', 'integer', 'min:1', 'max:60'],
             'urgent_within_days' => ['required', 'integer', 'min:0', 'max:30'],
+            'briefing_time' => ['nullable', 'string', 'regex:/^\d{2}:\d{2}$/'],
+            'default_reminder_minutes' => ['nullable', 'integer', 'min:5', 'max:120'],
             'nara_budget_minutes_per_week' => ['required', 'integer', 'min:60', 'max:2400'],
             'admin_budget_minutes_per_day' => ['required', 'integer', 'min:1', 'max:60'],
         ], [
@@ -77,9 +81,49 @@ class SettingsController extends Controller
             $this->settings->set($user, $key, (int) $data[$key]);
         }
 
+        if (! empty($data['briefing_time'])) {
+            $this->settings->set($user, 'briefing_time', $data['briefing_time']);
+        }
+        if (! empty($data['default_reminder_minutes'])) {
+            $this->settings->set($user, 'default_reminder_minutes', (int) $data['default_reminder_minutes']);
+        }
+
         return redirect()
             ->route('panel.settings.index')
             ->with('toast', 'Pengaturan disimpan.');
+    }
+
+    public function testNotification(Request $request, NotificationService $notificationService): RedirectResponse
+    {
+        $user = $request->user();
+        if (empty($user->telegram_chat_id)) {
+            return redirect()
+                ->route('panel.settings.index')
+                ->with('toast', 'Gagal: Telegram Chat ID belum diisi.');
+        }
+
+        $type = $request->input('type', 'briefing');
+
+        if ($type === 'briefing') {
+            $res = $notificationService->sendDailyBriefing($user, force: true);
+        } else {
+            $schedule = Schedule::query()
+                ->whereHas('task.project', fn ($q) => $q->where('user_id', $user->id))
+                ->orderBy('start_at')
+                ->first();
+
+            if (! $schedule) {
+                return redirect()
+                    ->route('panel.settings.index')
+                    ->with('toast', 'Gagal: Belum ada jadwal (schedule) di sistem untuk diuji coba.');
+            }
+
+            $res = $notificationService->sendScheduleReminder($schedule, force: true);
+        }
+
+        return redirect()
+            ->route('panel.settings.index')
+            ->with('toast', ($res['success'] ? '✓ ' : '! ') . $res['message']);
     }
 
     public function enableTwoFactor(Request $request): RedirectResponse

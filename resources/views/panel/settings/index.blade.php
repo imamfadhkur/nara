@@ -145,7 +145,45 @@
             </div>
         </div>
 
-        {{-- Bagian 2: Pengaturan Akun, Zona Waktu, dan Aturan Bisnis NARA --}}
+        {{-- Bagian 2: Uji Coba Notifikasi & Reminder Telegram --}}
+        <div class="nara-card p-6 border-l-4 border-indigo-500">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">📲</span>
+                        <h2 class="text-base font-semibold text-slate-900">Uji Coba Notifikasi Telegram (Fase 1)</h2>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-1">
+                        Picu pengiriman notifikasi pengujian langsung ke akun Telegram Anda
+                        @if($user->telegram_chat_id)
+                            (Chat ID: <code class="bg-indigo-50 text-indigo-700 font-semibold px-1.5 py-0.5 rounded border border-indigo-100">{{ $user->telegram_chat_id }}</code>).
+                        @else
+                            (<span class="text-amber-600 font-medium">Chat ID belum diisi pada form di bawah</span>).
+                        @endif
+                    </p>
+                </div>
+                <div class="flex flex-wrap items-center gap-2">
+                    <form method="POST" action="{{ route('panel.settings.test-notification') }}">
+                        @csrf
+                        <input type="hidden" name="type" value="briefing">
+                        <button type="submit" class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-amber-500 hover:bg-amber-600 active:scale-95 text-white transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" @disabled(empty($user->telegram_chat_id))>
+                            <span>☀️</span>
+                            <span>Kirim Briefing Pagi</span>
+                        </button>
+                    </form>
+                    <form method="POST" action="{{ route('panel.settings.test-notification') }}">
+                        @csrf
+                        <input type="hidden" name="type" value="reminder">
+                        <button type="submit" class="px-3.5 py-2 text-xs font-semibold rounded-lg bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50 disabled:cursor-not-allowed" @disabled(empty($user->telegram_chat_id))>
+                            <span>⏰</span>
+                            <span>Kirim Reminder Jadwal</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        {{-- Bagian 3: Pengaturan Akun, Zona Waktu, dan Aturan Bisnis NARA --}}
         <div class="nara-card p-6">
             <h2 class="text-base font-semibold text-slate-900 mb-1">Pengaturan Umum & Batas Sistem (Bagian 6.7)</h2>
             <p class="text-xs text-slate-500 mb-5">
@@ -234,6 +272,23 @@
                             <input type="number" name="admin_budget_minutes_per_day" min="1" max="60"
                                    value="{{ old('admin_budget_minutes_per_day', $settings['admin_budget_minutes_per_day']) }}"
                                    class="nara-input w-36">
+                        </x-form-field>
+                    </div>
+                </div>
+
+                <div class="pt-2 border-t border-slate-100">
+                    <h3 class="text-xs font-bold uppercase tracking-wider text-slate-500 mb-3">Jadwal Notifikasi Otomatis (Bagian 7.8)</h3>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <x-form-field name="briefing_time" label="Waktu Briefing Pagi (HH:MM)" hint="Default: 07:00 sesuai zona waktu Anda.">
+                            <input type="text" name="briefing_time" pattern="^([01]\d|2[0-3]):[0-5]\d$" placeholder="07:00"
+                                   value="{{ old('briefing_time', $settings['briefing_time'] ?? '07:00') }}"
+                                   class="nara-input font-mono">
+                        </x-form-field>
+
+                        <x-form-field name="default_reminder_minutes" label="Pengingat Sebelum Mulai Jadwal (Menit)" hint="Default: 30 menit sebelum sesi dimulai.">
+                            <input type="number" name="default_reminder_minutes" min="5" max="120" step="5"
+                                   value="{{ old('default_reminder_minutes', $settings['default_reminder_minutes'] ?? 30) }}"
+                                   class="nara-input">
                         </x-form-field>
                     </div>
                 </div>

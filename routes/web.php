@@ -61,6 +61,7 @@ Route::middleware(['auth', 'two-factor'])
 
         Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
         Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
+        Route::post('settings/test-notification', [SettingsController::class, 'testNotification'])->name('settings.test-notification');
         Route::post('settings/two-factor', [SettingsController::class, 'enableTwoFactor'])->name('settings.two-factor.enable');
         Route::post('settings/two-factor/confirm', [SettingsController::class, 'confirmTwoFactor'])->name('settings.two-factor.confirm');
         Route::post('settings/two-factor/recovery-codes', [SettingsController::class, 'regenerateRecoveryCodes'])->name('settings.two-factor.recovery');

@@ -16,3 +16,14 @@ Schedule::job(new BackupDatabase)
     ->dailyAt(config('nara.backup.time', '02:00'))
     ->name('nara:daily-backup')
     ->withoutOverlapping();
+
+/*
+|--------------------------------------------------------------------------
+| Pengiriman Notifikasi & Reminder (Bagian 7.8 & 8.4)
+|--------------------------------------------------------------------------
+*/
+Schedule::command('nara:notifications')
+    ->everyMinute()
+    ->name('nara:notifications')
+    ->withoutOverlapping();
+

@@ -99,6 +99,12 @@ class User extends Authenticatable
         return $this->hasMany(Output::class)->orderByDesc('produced_at');
     }
 
+    /** @return HasMany<Notification, $this> */
+    public function notifications(): HasMany
+    {
+        return $this->hasMany(Notification::class);
+    }
+
     public function hasTwoFactorEnabled(): bool
     {
         return ! is_null($this->two_factor_secret) && ! is_null($this->two_factor_confirmed_at);
