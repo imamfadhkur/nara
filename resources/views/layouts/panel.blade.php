@@ -50,19 +50,6 @@
     >
         {{-- Header brand: latar terang agar logo navy kontras dengan sidebar gelap --}}
         <div class="relative px-4 pt-3 pb-3 bg-gradient-to-br from-white via-sky-50 to-indigo-100 border-b-4 border-cyan-400/70 shadow-md">
-            {{-- Tombol Sembunyikan Sidebar --}}
-            <div class="flex items-center justify-between mb-1.5">
-                <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Navigasi NARA</span>
-                <button
-                    type="button"
-                    @click="window.innerWidth < 1024 ? sidebarMobileOpen = false : toggleSidebar()"
-                    class="flex items-center gap-1 text-[11px] font-semibold text-slate-600 hover:text-slate-950 px-2 py-0.5 rounded-md hover:bg-slate-200/70 transition cursor-pointer"
-                    title="Sembunyikan Sidebar agar fokus ke konten"
-                >
-                    <span class="text-xs">⇤</span>
-                    <span class="hidden sm:inline">Sembunyikan</span>
-                </button>
-            </div>
 
             <a href="{{ route('panel.today') }}" class="block group" title="NARA AI — Your Personal AI Agent">
                 {{-- Crop area transparan PNG (konten logo ±414×114 px dari 492×277 px) --}}
@@ -72,11 +59,7 @@
                 </div>
             </a>
 
-            <div class="mt-2 flex items-center justify-center gap-1.5 text-[10px] font-semibold">
-                <span class="px-2 py-0.5 rounded-full bg-[#0b192c] text-cyan-300 tracking-wide">v1.0</span>
-                <span class="px-2 py-0.5 rounded-full bg-white text-indigo-700 ring-1 ring-indigo-200">Fase 2 · NARA 1.0</span>
-            </div>
-            <p class="mt-1.5 text-center text-[11px] leading-snug text-slate-600">
+            <p class="mt-3 text-center text-[11px] leading-snug text-slate-600">
                 Sistem Lengkap, Deterministik & Integrasi Eksternal.
             </p>
         </div>
@@ -119,9 +102,9 @@
                         ['route' => 'panel.outputs.*', 'href' => route('panel.outputs.index'), 'icon' => '🏆', 'label' => 'Outputs (Karya)', 'desc' => 'Bukti hasil kerja nyata', 'badge' => null],
                     ],
                     'Komitmen & Goal' => [
-                        ['route' => 'panel.projects.*', 'href' => route('panel.projects.index'), 'icon' => '🚀', 'label' => 'Projects & WIP', 'desc' => 'Maks. 3 project aktif per slot', 'badge' => null],
-                        ['route' => 'panel.goals.*', 'href' => route('panel.goals.index'), 'icon' => '🎖️', 'label' => 'Goals', 'desc' => 'Target jangka menengah', 'badge' => null],
                         ['route' => 'panel.life-domains.*', 'href' => route('panel.life-domains.index'), 'icon' => '🌱', 'label' => 'Life Domains', 'desc' => 'Area hidup yang dijaga', 'badge' => null],
+                        ['route' => 'panel.goals.*', 'href' => route('panel.goals.index'), 'icon' => '🎖️', 'label' => 'Goals', 'desc' => 'Target jangka menengah', 'badge' => null],
+                        ['route' => 'panel.projects.*', 'href' => route('panel.projects.index'), 'icon' => '🚀', 'label' => 'Projects & WIP', 'desc' => 'Maks. 3 project aktif per slot', 'badge' => null],
                     ],
                     'Sistem' => [
                         ['route' => 'panel.settings.*', 'href' => route('panel.settings.index'), 'icon' => '⚙️', 'label' => 'Settings & Integrasi', 'desc' => 'Kapasitas, Telegram & Google Cal', 'badge' => $needs2fa ? '!' : null],
@@ -189,7 +172,7 @@
                     <svg class="w-4 h-4 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h7" />
                     </svg>
-                    <span class="text-xs font-semibold text-slate-700 hidden sm:inline" x-text="sidebarCollapsed ? 'Tampilkan Menu' : 'Sembunyikan Menu'">
+                    <span class="text-xs font-semibold text-slate-700 hidden sm:inline" x-text="sidebarCollapsed ? '' : ''">
                         Sembunyikan Menu
                     </span>
                 </button>
