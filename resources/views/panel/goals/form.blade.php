@@ -47,6 +47,12 @@
                 </x-form-field>
             </div>
 
+            <x-form-field name="wip_limit" label="Batas Maksimal Project Aktif (WIP Limit)" hint="Jumlah project aktif bersamaan yang diizinkan di bawah Goal ini. Kosongkan untuk mengikuti batas default sistem.">
+                <input id="wip_limit" name="wip_limit" type="number" min="1" max="20" placeholder="Bawaan sistem (misal: 3)"
+                       value="{{ old('wip_limit', $goal->wip_limit) }}"
+                       class="nara-input">
+            </x-form-field>
+
             <div class="pt-2 flex items-center gap-2">
                 <button type="submit" class="nara-btn-primary">Simpan</button>
                 <a href="{{ route('panel.goals.index') }}" class="nara-btn-secondary">Batal</a>

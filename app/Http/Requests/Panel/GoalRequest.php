@@ -13,6 +13,13 @@ class GoalRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('wip_limit') === '') {
+            $this->merge(['wip_limit' => null]);
+        }
+    }
+
     /** @return array<string, mixed> */
     public function rules(): array
     {
@@ -26,6 +33,7 @@ class GoalRequest extends FormRequest
             'description' => ['nullable', 'string', 'max:5000'],
             'target_date' => ['nullable', 'date'],
             'status' => ['required', Rule::enum(GoalStatus::class)],
+            'wip_limit' => ['nullable', 'integer', 'min:1', 'max:50'],
         ];
     }
 

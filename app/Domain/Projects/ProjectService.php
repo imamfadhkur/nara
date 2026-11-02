@@ -101,15 +101,20 @@ class ProjectService
         });
     }
 
-    /** Project active wajib punya wip_slot dan lolos WipGuard. */
+    /** Project active wajib terhubung ke Goal atau punya wip_slot dan lolos WipGuard. */
     private function guardStatus(Project $project): void
     {
         if ($project->status !== ProjectStatus::Active) {
             return;
         }
 
-        if ($project->wip_slot === null) {
-            throw new DomainRuleException('Project aktif wajib memiliki slot WIP.', 'wip_slot');
+        // Jika project memiliki goal_id namun wip_slot belum diisi, tetapkan wip_slot berbasis Goal terkait
+        if ($project->wip_slot === null && $project->goal_id !== null) {
+            $project->wip_slot = 'goal_'.$project->goal_id;
+        }
+
+        if ($project->wip_slot === null && $project->goal_id === null) {
+            throw new DomainRuleException('Project aktif wajib memiliki Goal (atau slot WIP).', 'wip_slot');
         }
 
         $this->wipGuard->ensureCanActivate($project, $project->wip_slot);

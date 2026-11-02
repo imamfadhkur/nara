@@ -2,6 +2,7 @@
                 :heading="$project->exists ? 'Ubah Project: '.$project->name : 'Tambah Project Baru'">
     <div class="max-w-3xl nara-card p-6" x-data="{
         status: '{{ old('status', $project->status?->value ?? 'idea') }}',
+        goalId: '{{ old('goal_id', $project->goal_id ?? '') }}',
         wipSlot: '{{ old('wip_slot', $project->wip_slot?->value ?? '') }}'
     }">
         <form method="POST"
@@ -20,12 +21,17 @@
             </x-form-field>
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <x-form-field name="goal_id" label="Goal Induk" hint="Opsional: project boleh berdiri sendiri tanpa Goal.">
-                    <select id="goal_id" name="goal_id" class="nara-input">
+                <x-form-field name="goal_id" label="Goal Induk (WIP Slot Utama)" hint="Project aktif akan menggunakan kuota WIP Goal terkait.">
+                    <select id="goal_id" name="goal_id" x-model="goalId" class="nara-input">
                         <option value="">— Berdiri Sendiri (Tanpa Goal) —</option>
                         @foreach ($goals as $g)
+                            @php
+                                $usage = $wipUsage['goal_'.$g->id] ?? null;
+                                $activeCount = $usage ? $usage['count'] : $g->activeProjectsCount();
+                                $limit = $usage ? $usage['limit'] : ($g->wip_limit ?: 3);
+                            @endphp
                             <option value="{{ $g->id }}" @selected((int) old('goal_id', $project->goal_id) === $g->id)>
-                                {{ $g->title }} ({{ $g->lifeDomain->name }})
+                                🎯 {{ $g->title }} ({{ $activeCount }}/{{ $limit }} aktif)
                             </option>
                         @endforeach
                     </select>
@@ -64,26 +70,37 @@
                 </x-form-field>
             </div>
 
-            {{-- Pemilihan Slot WIP (wajib jika status == active) --}}
+            {{-- Pemilihan Slot WIP (Otomatis per Goal, atau Manual jika Tanpa Goal) --}}
             <div x-show="status === 'active'" x-cloak class="p-4 bg-sky-50/70 rounded-xl border border-sky-200 space-y-3">
-                <x-form-field name="wip_slot" label="Slot WIP (Batas Max 3 Project Aktif per Slot)" :required="true"
-                              hint="Aturan WipGuard: Menolak project aktif ke-4 dalam satu slot.">
-                    <select id="wip_slot" name="wip_slot" x-model="wipSlot" class="nara-input bg-white">
-                        <option value="">— Pilih Slot WIP —</option>
-                        @foreach (\App\Support\Enums\WipSlot::cases() as $slot)
-                            @php
-                                $usage = $wipUsage[$slot->value] ?? null;
-                                $isThisProject = $project->exists && $project->status?->value === 'active' && $project->wip_slot?->value === $slot->value;
-                                $activeCount = $usage ? $usage['count'] : 0;
-                            @endphp
-                            <option value="{{ $slot->value }}" @selected(old('wip_slot', $project->wip_slot?->value) === $slot->value)>
-                                {{ $slot->label() }} (Saat ini: {{ $activeCount }}/{{ $usage['limit'] ?? 3 }} aktif)
-                            </option>
-                        @endforeach
-                    </select>
-                </x-form-field>
-                <p class="text-xs text-sky-800">
-                    💡 <em>WIP (Work In Progress) guard adalah pagar pengaman agar beban komitmen tidak melebihi waktu hidup nyata.</em>
+                <div x-show="goalId" class="space-y-1">
+                    <div class="flex items-center gap-2 text-xs font-bold text-sky-950">
+                        <span>🎯</span>
+                        <span>Kuota WIP Ditentukan Otomatis oleh Goal Induk</span>
+                    </div>
+                    <p class="text-xs text-sky-800 leading-relaxed">
+                        Project ini akan otomatis menggunakan slot dan kuota maksimal dari Goal yang Anda pilih di atas. Setiap Goal memiliki batas WIP yang dapat disesuaikan di Settings.
+                    </p>
+                </div>
+
+                <div x-show="!goalId">
+                    <x-form-field name="wip_slot" label="Slot WIP Alternatif (Project Mandiri)" :required="true"
+                                  hint="Diperlukan khusus bila project berdiri sendiri tanpa Goal induk.">
+                        <select id="wip_slot" name="wip_slot" x-model="wipSlot" class="nara-input bg-white">
+                            <option value="">— Pilih Slot WIP —</option>
+                            @foreach (\App\Support\Enums\WipSlot::cases() as $slot)
+                                @php
+                                    $usage = $wipUsage[$slot->value] ?? null;
+                                    $activeCount = $usage ? $usage['count'] : 0;
+                                @endphp
+                                <option value="{{ $slot->value }}" @selected(old('wip_slot', $project->wip_slot?->value) === $slot->value)>
+                                    {{ $slot->label() }} (Saat ini: {{ $activeCount }}/{{ $usage['limit'] ?? 3 }} aktif)
+                                </option>
+                            @endforeach
+                        </select>
+                    </x-form-field>
+                </div>
+                <p class="text-[11px] text-slate-500 pt-1 border-t border-sky-200/50">
+                    💡 <em>WIP (Work In Progress) Guard menjaga fokus Anda agar tidak overkomitmen melebihi kapasitas nyata.</em>
                 </p>
             </div>
 

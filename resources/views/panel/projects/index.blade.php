@@ -1,15 +1,16 @@
 <x-panel-layout title="Projects & WIP" heading="Projects & Batas WIP">
-    {{-- Ringkasan Slot WIP (Bagian 7.3: maksimal N per slot) --}}
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    {{-- Ringkasan Slot WIP Berbasis Goal (Bagian 7.3: kuota per Goal dinamis) --}}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         @foreach ($wipUsage as $slotKey => $data)
             @php
                 $isFull = $data['count'] >= $data['limit'];
                 $tone = $isFull ? 'danger' : ($data['count'] > 0 ? 'primary' : 'neutral');
+                $cardTitle = $data['title'] ?? ('Slot WIP: ' . $data['slot']->label());
             @endphp
             <x-kpi-card
-                :title="'Slot WIP: ' . $data['slot']->label()"
+                :title="$cardTitle"
                 :value="$data['count'] . ' / ' . $data['limit'] . ' aktif'"
-                :subtitle="$isFull ? '● Slot Penuh (WipGuard aktif)' : 'Kapasitas slot aman'"
+                :subtitle="$isFull ? '● Kuota Penuh (WipGuard aktif)' : 'Kapasitas slot aman'"
                 :tone="$tone"
             >
                 @if ($data['projects']->isNotEmpty())
@@ -25,9 +26,15 @@
 
     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
         <p class="text-sm text-slate-600">
-            Wadah pekerjaan dengan hasil akhir terukur. Project aktif dibatasi 3 per slot untuk mencegah beban berlebih.
+            Wadah pekerjaan dengan hasil akhir terukur. Setiap Goal memiliki batas WIP masing-masing untuk mencegah beban berlebih.
         </p>
-        <a href="{{ route('panel.projects.create') }}" class="nara-btn-primary self-start sm:self-auto">+ Project</a>
+        <div class="flex items-center gap-2 self-start sm:self-auto">
+            <a href="{{ route('panel.settings.index') }}#general" class="nara-btn-secondary text-xs flex items-center gap-1.5" title="Atur batas kuota project aktif per Goal di Settings">
+                <span>🎯</span>
+                <span>Atur Kuota WIP Goals</span>
+            </a>
+            <a href="{{ route('panel.projects.create') }}" class="nara-btn-primary">+ Project</a>
+        </div>
     </div>
 
     @php

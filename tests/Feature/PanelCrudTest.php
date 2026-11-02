@@ -117,11 +117,13 @@ class PanelCrudTest extends TestCase
             'life_domain_id' => $domain->id,
             'title' => 'Publikasi Ilmiah Tahun Ini',
             'status' => 'active',
+            'wip_limit' => 4,
         ]);
         $goalResponse->assertRedirect();
         $this->assertDatabaseHas('goals', [
             'life_domain_id' => $domain->id,
             'title' => 'Publikasi Ilmiah Tahun Ini',
+            'wip_limit' => 4,
         ]);
     }
 
@@ -351,6 +353,42 @@ class PanelCrudTest extends TestCase
         $response->assertSee('Dokumen Draf Arsitektur');
         $response->assertSee('draft_arsitektur.pdf');
         $response->assertSee('Unggah Berkas Bukti (File Upload)');
+    }
+
+    public function test_can_update_goal_wip_limits_via_settings(): void
+    {
+        $domain = LifeDomain::factory()->create(['user_id' => $this->user->id]);
+        $goal1 = Goal::factory()->create([
+            'life_domain_id' => $domain->id,
+            'title' => 'Goal 1',
+            'wip_limit' => null,
+        ]);
+        $goal2 = Goal::factory()->create([
+            'life_domain_id' => $domain->id,
+            'title' => 'Goal 2',
+            'wip_limit' => 2,
+        ]);
+
+        $response = $this->actingAs($this->user)->put(route('panel.settings.update'), [
+            'timezone' => 'Asia/Jakarta',
+            'weekly_capacity_minutes' => 2400,
+            'capacity_warn_percent' => 80,
+            'capacity_over_percent' => 100,
+            'wip_limit_per_slot' => 3,
+            'stagnation_days' => 14,
+            'urgent_within_days' => 2,
+            'nara_budget_minutes_per_week' => 600,
+            'admin_budget_minutes_per_day' => 15,
+            'goal_wip_limits' => [
+                $goal1->id => 5,
+                $goal2->id => '', // reset ke null (default)
+            ],
+        ]);
+
+        $response->assertRedirect(route('panel.settings.index'));
+
+        $this->assertSame(5, $goal1->fresh()->wip_limit);
+        $this->assertNull($goal2->fresh()->wip_limit);
     }
 }
 

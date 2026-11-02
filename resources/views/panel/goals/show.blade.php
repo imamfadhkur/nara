@@ -1,8 +1,11 @@
 <x-panel-layout :title="$goal->title" :heading="'Goal: '.$goal->title">
-    <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <x-kpi-card title="Life Domain" :value="$goal->lifeDomain->name" tone="primary" />
+        <x-kpi-card title="Kapasitas WIP" :value="$goal->activeProjects()->count() . ' / ' . ($goal->wip_limit ?: 'Default (3)') . ' aktif'"
+                    :subtitle="$goal->wip_limit ? 'Batas WIP Kustom Goal' : 'Mengikuti default sistem'"
+                    :tone="$goal->activeProjects()->count() >= ($goal->wip_limit ?: 3) ? 'danger' : 'neutral'" />
         <x-kpi-card title="Progres (Project Aktif)" :value="$goal->progress_percent.'%'"
-                    subtitle="Rata-rata progres project aktif di bawah goal ini" tone="accent" />
+                    subtitle="Rata-rata progres project aktif" tone="accent" />
         <x-kpi-card title="Target" :value="$goal->target_date?->format('d/m/Y') ?? 'Tanpa tanggal'"
                     :subtitle="'Status: '.$goal->status->label()" />
     </div>

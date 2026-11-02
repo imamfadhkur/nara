@@ -60,7 +60,7 @@ class Project extends Model
             'category' => ProjectCategory::class,
             'origin' => ProjectOrigin::class,
             'status' => ProjectStatus::class,
-            'wip_slot' => WipSlot::class,
+            'wip_slot' => \App\Casts\WipSlotCast::class,
             'impact' => Level::class,
             'urgency' => Level::class,
             'start_date' => 'date',

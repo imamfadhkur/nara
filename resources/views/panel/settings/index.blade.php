@@ -157,6 +157,77 @@
                             </x-form-field>
                         </div>
 
+                        {{-- Pengaturan Kuota Batas WIP per Goal (Opsi B & C: WIP Slot berbasis Goal dinamis) --}}
+                        <div class="mt-6 p-4 rounded-xl border border-sky-200/90 bg-sky-50/50 space-y-3">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h4 class="text-xs font-bold text-sky-950 uppercase tracking-wider flex items-center gap-1.5">
+                                        <span>🎯</span>
+                                        <span>Batas Maksimal Project Aktif (WIP) per Goal</span>
+                                    </h4>
+                                    <p class="text-[11px] text-slate-600 mt-0.5">
+                                        Setiap Goal berfungsi sebagai wadah WIP dinamis. Anda dapat menentukan batas maksimal project aktif secara spesifik per Goal (1–10 project), atau kosongkan untuk mengikuti batas default sistem ({{ $settings['wip_limit_per_slot'] }} project).
+                                    </p>
+                                </div>
+                                <a href="{{ route('panel.goals.create') }}" class="nara-btn-secondary text-[11px] py-1 px-2.5 shrink-0">
+                                    + Goal Baru
+                                </a>
+                            </div>
+
+                            @if ($goals->isEmpty())
+                                <p class="text-xs text-slate-500 italic py-2">
+                                    Belum ada Goal. <a href="{{ route('panel.goals.create') }}" class="text-sky-700 underline font-semibold">Buat goal pertama Anda</a> untuk mulai mengelompokkan project dan batas WIP.
+                                </p>
+                            @else
+                                <div class="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+                                    <table class="w-full text-left text-xs">
+                                        <thead class="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                                            <tr>
+                                                <th class="p-2.5">Life Domain & Judul Goal</th>
+                                                <th class="p-2.5 text-center">Status Project Aktif</th>
+                                                <th class="p-2.5 text-right w-44">Batas Max WIP</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100">
+                                            @foreach ($goals as $g)
+                                                <tr class="hover:bg-slate-50/70">
+                                                    <td class="p-2.5">
+                                                        <div class="font-semibold text-slate-800">{{ $g->title }}</div>
+                                                        <div class="text-[10px] text-slate-500 flex items-center gap-1">
+                                                            <span class="inline-block w-2 h-2 rounded-full" style="background-color: var(--color-{{ $g->lifeDomain->color ?? 'blue' }}-500, #0284c7);"></span>
+                                                            <span>{{ $g->lifeDomain?->name ?? 'Tanpa Domain' }}</span>
+                                                        </div>
+                                                    </td>
+                                                    <td class="p-2.5 text-center whitespace-nowrap">
+                                                        @php
+                                                            $effectiveLimit = $g->wip_limit ?? $settings['wip_limit_per_slot'];
+                                                            $isFull = $g->active_projects_count >= $effectiveLimit;
+                                                        @endphp
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[11px] font-bold {{ $isFull ? 'bg-rose-100 text-rose-700' : ($g->active_projects_count > 0 ? 'bg-sky-100 text-sky-700' : 'bg-slate-100 text-slate-600') }}">
+                                                            {{ $g->active_projects_count }} / {{ $effectiveLimit }} aktif
+                                                        </span>
+                                                    </td>
+                                                    <td class="p-2.5 text-right">
+                                                        <div class="flex items-center justify-end gap-1.5">
+                                                            <input
+                                                                type="number"
+                                                                name="goal_wip_limits[{{ $g->id }}]"
+                                                                min="1"
+                                                                max="20"
+                                                                value="{{ $g->wip_limit }}"
+                                                                placeholder="{{ $settings['wip_limit_per_slot'] }} (Default)"
+                                                                class="w-28 text-xs py-1 px-2 rounded-lg border-slate-300 text-right focus:border-sky-500"
+                                                            >
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @endif
+                        </div>
+
                         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
                             <x-form-field name="nara_budget_minutes_per_week" label="Anggaran Dev NARA (Mnt/Mgg)" :required="true" hint="Default: 360 (6 jam)">
                                 <input type="number" name="nara_budget_minutes_per_week" min="60" max="2400"

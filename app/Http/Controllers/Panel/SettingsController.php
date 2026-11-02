@@ -44,9 +44,15 @@ class SettingsController extends Controller
             ];
         }
 
+        $goals = $user->goals()->with('lifeDomain')->withCount([
+            'projects as active_projects_count' => fn ($q) => $q->where('status', 'active'),
+            'projects as total_projects_count',
+        ])->orderBy('title')->get();
+
         return view('panel.settings.index', [
             'user' => $user,
             'settings' => $values,
+            'goals' => $goals,
             'twoFactorSetup' => $setup,
             'recoveryCodes' => session('recovery_codes'),
             'telegramConfig' => $this->integrations->getTelegramConfig($user),
@@ -97,6 +103,13 @@ class SettingsController extends Controller
         }
         if (! empty($data['default_reminder_minutes'])) {
             $this->settings->set($user, 'default_reminder_minutes', (int) $data['default_reminder_minutes']);
+        }
+
+        if ($request->has('goal_wip_limits') && is_array($request->input('goal_wip_limits'))) {
+            foreach ($request->input('goal_wip_limits') as $goalId => $limitVal) {
+                $parsedLimit = ($limitVal !== '' && $limitVal !== null && (int) $limitVal > 0) ? (int) $limitVal : null;
+                $user->goals()->where('goals.id', $goalId)->update(['wip_limit' => $parsedLimit]);
+            }
         }
 
         return redirect()

@@ -5,6 +5,8 @@ namespace Tests\Unit;
 use App\Domain\Projects\ProjectService;
 use App\Domain\Projects\WipGuard;
 use App\Domain\Projects\WipLimitExceededException;
+use App\Models\Goal;
+use App\Models\LifeDomain;
 use App\Models\Project;
 use App\Models\User;
 use App\Support\Enums\ProjectStatus;
@@ -105,6 +107,69 @@ class WipGuardTest extends TestCase
 
         $this->assertSame(ProjectStatus::Active, $p4->status);
         $this->assertCount(3, $this->guard->activeIn($user, WipSlot::Business));
+    }
+
+    public function test_goal_wip_limit_custom_enforces_limit(): void
+    {
+        $user = User::factory()->create();
+        $domain = LifeDomain::factory()->create(['user_id' => $user->id]);
+        $goal = Goal::factory()->create([
+            'life_domain_id' => $domain->id,
+            'title' => 'Fokus AI 2026',
+            'wip_limit' => 2,
+        ]);
+
+        $p1 = $this->service->create($user, [
+            'name' => 'Project AI 1',
+            'goal_id' => $goal->id,
+            'status' => ProjectStatus::Active,
+        ]);
+        $p2 = $this->service->create($user, [
+            'name' => 'Project AI 2',
+            'goal_id' => $goal->id,
+            'status' => ProjectStatus::Active,
+        ]);
+
+        $this->assertSame(2, $goal->activeProjectsCount());
+
+        $this->expectException(WipLimitExceededException::class);
+        $this->expectExceptionMessage('Goal "Fokus AI 2026" sudah penuh (2/2)');
+
+        $this->service->create($user, [
+            'name' => 'Project AI 3 Berlebih',
+            'goal_id' => $goal->id,
+            'status' => ProjectStatus::Active,
+        ]);
+    }
+
+    public function test_goal_wip_limit_fallback_uses_default(): void
+    {
+        $user = User::factory()->create();
+        $domain = LifeDomain::factory()->create(['user_id' => $user->id]);
+        $goal = Goal::factory()->create([
+            'life_domain_id' => $domain->id,
+            'title' => 'Riset Tesis',
+            'wip_limit' => null, // fallback ke setting user / 3
+        ]);
+
+        for ($i = 1; $i <= 3; $i++) {
+            $this->service->create($user, [
+                'name' => "Tesis Part {$i}",
+                'goal_id' => $goal->id,
+                'status' => ProjectStatus::Active,
+            ]);
+        }
+
+        $this->assertSame(3, $goal->activeProjectsCount());
+
+        $this->expectException(WipLimitExceededException::class);
+        $this->expectExceptionMessage('Goal "Riset Tesis" sudah penuh (3/3)');
+
+        $this->service->create($user, [
+            'name' => 'Tesis Part 4 Berlebih',
+            'goal_id' => $goal->id,
+            'status' => ProjectStatus::Active,
+        ]);
     }
 }
 

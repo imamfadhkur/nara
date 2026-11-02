@@ -44,9 +44,10 @@ class ProjectRequest extends FormRequest
             'origin' => ['required', Rule::enum(ProjectOrigin::class)],
             'status' => ['required', Rule::enum(ProjectStatus::class)],
             'wip_slot' => [
-                Rule::requiredIf(fn () => $this->input('status') === ProjectStatus::Active->value),
+                Rule::requiredIf(fn () => $this->input('status') === ProjectStatus::Active->value && empty($this->input('goal_id'))),
                 'nullable',
-                Rule::enum(WipSlot::class),
+                'string',
+                'max:64',
             ],
             'impact' => ['required', Rule::enum(Level::class)],
             'urgency' => ['required', Rule::enum(Level::class)],
@@ -61,7 +62,7 @@ class ProjectRequest extends FormRequest
     {
         return [
             'name.required' => 'Nama project wajib diisi.',
-            'wip_slot.required' => 'Project aktif wajib memilih slot WIP (Akademik, Bisnis, atau Personal).',
+            'wip_slot.required' => 'Project aktif wajib memilih Goal (atau slot WIP).',
             'due_date.after_or_equal' => 'Tanggal tenggat tidak boleh sebelum tanggal mulai.',
             'goal_id.exists' => 'Goal yang dipilih tidak valid.',
         ];
