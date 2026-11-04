@@ -1,6 +1,5 @@
 <?php
 
-use App\Domain\Auth\TwoFactorAuthenticator;
 use App\Models\User;
 
 test('login screen can be rendered', function () {

@@ -10,7 +10,6 @@ use App\Models\Task;
 use App\Models\User;
 use App\Support\Enums\GoalStatus;
 use App\Support\Enums\ProjectStatus;
-use App\Support\Enums\TaskPriority;
 use App\Support\Enums\TaskStatus;
 use App\Support\Enums\WipSlot;
 use Illuminate\Foundation\Testing\RefreshDatabase;

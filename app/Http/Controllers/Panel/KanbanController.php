@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Panel;
 
 use App\Domain\Tasks\TaskService;
 use App\Http\Controllers\Controller;
-use App\Models\Project;
 use App\Models\Task;
 use App\Support\Enums\TaskStatus;
 use Illuminate\Http\JsonResponse;

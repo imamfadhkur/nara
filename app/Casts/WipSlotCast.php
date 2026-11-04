@@ -74,3 +74,4 @@ class WipSlotCast implements CastsAttributes
         return (string) $value;
     }
 }
+

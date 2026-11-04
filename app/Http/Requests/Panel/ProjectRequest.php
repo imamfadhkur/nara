@@ -6,7 +6,6 @@ use App\Support\Enums\Level;
 use App\Support\Enums\ProjectCategory;
 use App\Support\Enums\ProjectOrigin;
 use App\Support\Enums\ProjectStatus;
-use App\Support\Enums\WipSlot;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 

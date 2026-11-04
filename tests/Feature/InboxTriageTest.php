@@ -2,14 +2,10 @@
 
 namespace Tests\Feature;
 
-use App\Domain\Capture\InboxService;
-use App\Models\Goal;
 use App\Models\InboxItem;
 use App\Models\LifeDomain;
 use App\Models\Project;
-use App\Models\Task;
 use App\Models\User;
-use App\Support\Enums\ActivitySource;
 use App\Support\Enums\InboxStatus;
 use App\Support\Enums\ProjectCategory;
 use App\Support\Enums\ProjectOrigin;

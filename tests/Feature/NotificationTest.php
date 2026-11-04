@@ -1,7 +1,6 @@
 <?php
 
 use App\Domain\Notifications\NotificationService;
-use App\Integrations\Telegram\TelegramClient;
 use App\Models\LifeDomain;
 use App\Models\Notification;
 use App\Models\NotificationLog;

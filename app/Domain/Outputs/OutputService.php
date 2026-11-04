@@ -6,7 +6,6 @@ use App\Domain\Activity\ActivityLogger;
 use App\Models\Output;
 use App\Models\OutputFile;
 use App\Models\Project;
-use App\Models\Task;
 use App\Models\User;
 use App\Support\Enums\ActivityEvent;
 use App\Support\Enums\OutputType;

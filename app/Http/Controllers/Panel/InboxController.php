@@ -5,8 +5,6 @@ namespace App\Http\Controllers\Panel;
 use App\Domain\Capture\InboxService;
 use App\Http\Controllers\Controller;
 use App\Models\InboxItem;
-use App\Models\LifeDomain;
-use App\Models\Project;
 use App\Support\Enums\ActivitySource;
 use App\Support\Enums\InboxStatus;
 use Illuminate\Http\RedirectResponse;

@@ -65,8 +65,8 @@
 
                 <select name="wip_slot" onchange="this.form.submit()" class="rounded-lg border-slate-300 text-xs py-1.5">
                     <option value="">Semua Slot WIP</option>
-                    @foreach (\App\Support\Enums\WipSlot::cases() as $ws)
-                        <option value="{{ $ws->value }}" @selected(request('wip_slot') === $ws->value)>{{ $ws->label() }}</option>
+                    @foreach ($wipUsage as $slotKey => $slotData)
+                        <option value="{{ $slotKey }}" @selected(request('wip_slot') === (string) $slotKey)>{{ $slotData['title'] }}</option>
                     @endforeach
                 </select>
 

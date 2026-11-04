@@ -79,7 +79,7 @@ class ProjectService
         });
     }
 
-    public function changeStatus(Project $project, ProjectStatus $status, ?WipSlot $slot = null): Project
+    public function changeStatus(Project $project, ProjectStatus $status, mixed $slot = null): Project
     {
         $data = ['status' => $status];
         if ($slot !== null) {
