@@ -45,13 +45,7 @@ class IntegrationService
     {
         $integration = $this->getIntegration($user, self::TELEGRAM);
 
-        if (! $integration->is_active) {
-            return false;
-        }
-
-        $config = $this->getTelegramConfig($user);
-
-        return ! empty($config['bot_token']) && ! empty($config['chat_id']);
+        return (bool) $integration->is_active;
     }
 
     public function isGoogleCalendarEnabled(User $user): bool
@@ -66,7 +60,11 @@ class IntegrationService
      *     is_active: bool,
      *     bot_token: string,
      *     chat_id: string,
-     *     webhook_secret: string
+     *     webhook_secret: string,
+     *     webhook_url: string,
+     *     bot_username: string,
+     *     webhook_registered_url: string,
+     *     webhook_synced_at: string|null
      * }
      */
     public function getTelegramConfig(User $user): array
@@ -74,11 +72,17 @@ class IntegrationService
         $integration = $this->getIntegration($user, self::TELEGRAM);
         $meta = $integration->meta ?? [];
 
+        $defaultWebhookUrl = url('/api/telegram/webhook');
+
         return [
             'is_active' => (bool) $integration->is_active,
             'bot_token' => (string) ($meta['bot_token'] ?? config('nara.telegram.bot_token') ?? ''),
             'chat_id' => (string) ($meta['chat_id'] ?? $user->telegram_chat_id ?? ''),
-            'webhook_secret' => (string) ($meta['webhook_secret'] ?? config('nara.telegram.webhook_secret') ?? ''),
+            'webhook_secret' => (string) (array_key_exists('webhook_secret', $meta) ? $meta['webhook_secret'] : (config('nara.telegram.webhook_secret') ?? '')),
+            'webhook_url' => (string) (! empty($meta['webhook_url']) ? $meta['webhook_url'] : $defaultWebhookUrl),
+            'bot_username' => (string) ($meta['bot_username'] ?? ''),
+            'webhook_registered_url' => (string) ($meta['webhook_registered_url'] ?? ''),
+            'webhook_synced_at' => $meta['webhook_synced_at'] ?? null,
         ];
     }
 
@@ -137,6 +141,18 @@ class IntegrationService
         }
         if (isset($data['webhook_secret'])) {
             $meta['webhook_secret'] = trim((string) $data['webhook_secret']);
+        }
+        if (isset($data['webhook_url'])) {
+            $meta['webhook_url'] = trim((string) $data['webhook_url']);
+        }
+        if (isset($data['bot_username'])) {
+            $meta['bot_username'] = trim((string) $data['bot_username']);
+        }
+        if (isset($data['webhook_registered_url'])) {
+            $meta['webhook_registered_url'] = trim((string) $data['webhook_registered_url']);
+        }
+        if (array_key_exists('webhook_synced_at', $data)) {
+            $meta['webhook_synced_at'] = $data['webhook_synced_at'];
         }
 
         $isActive = isset($data['is_active']) ? (bool) $data['is_active'] : $integration->is_active;

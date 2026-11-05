@@ -370,10 +370,26 @@
                     </div>
                 </div>
 
-                {{-- Form Konfigurasi Telegram --}}
-                <form method="POST" action="{{ route('panel.settings.integrations.telegram') }}" class="space-y-4 mb-6">
+                {{-- Form Konfigurasi Telegram Dinamis (Database-Driven & Auto-Webhook) --}}
+                <form method="POST" action="{{ route('panel.settings.integrations.telegram') }}"
+                      class="space-y-4 mb-6"
+                      x-data="{
+                          showToken: false,
+                          showSecret: false,
+                          webhookUrl: @js(old('webhook_url', $telegramConfig['webhook_url'])),
+                          webhookSecret: @js(old('webhook_secret', $telegramConfig['webhook_secret'])),
+                          generateSecret() {
+                              const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-';
+                              let res = 'nara_wh_';
+                              for (let i = 0; i < 24; i++) {
+                                  res += chars.charAt(Math.floor(Math.random() * chars.length));
+                              }
+                              this.webhookSecret = res;
+                              this.showSecret = true;
+                          }
+                      }">
                     @csrf
-                    <div class="p-3 bg-sky-50/60 rounded-xl border border-sky-200/80">
+                    <div class="p-3.5 bg-sky-50/60 rounded-xl border border-sky-200/80">
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" id="telegram_active" name="is_active" value="1"
                                    @checked($isTelegramEnabled)
@@ -383,17 +399,23 @@
                             </span>
                         </label>
                         <p class="text-[11px] text-slate-500 mt-1 ml-6">
-                            Jika dimatikan, semua fitur outbound (briefing/reminder) berhenti sementara dan webhook masuk ditolak dengan aman.
+                            Seluruh konfigurasi di bawah disimpan di database (tabel <code>integrations</code>) dan memprioritaskan pengaturan panel ini di atas file <code>.env</code>.
                         </p>
                     </div>
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
                         <div>
                             <label class="block font-semibold text-slate-700 mb-1">Bot Token</label>
-                            <input type="password" name="bot_token"
-                                   value="{{ old('bot_token', $telegramConfig['bot_token']) }}"
-                                   placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
-                                   class="w-full text-xs font-mono rounded-lg border-slate-300 py-2 px-3 focus:border-sky-500">
+                            <div class="relative">
+                                <input :type="showToken ? 'text' : 'password'" name="bot_token"
+                                       value="{{ old('bot_token', $telegramConfig['bot_token']) }}"
+                                       placeholder="123456789:ABCdefGhIJKlmNoPQRsTUVwxyZ"
+                                       class="w-full text-xs font-mono rounded-lg border-slate-300 py-2 pl-3 pr-16 focus:border-sky-500">
+                                <button type="button" @click="showToken = !showToken"
+                                        class="absolute inset-y-0 right-0 px-2.5 text-[11px] font-semibold text-slate-500 hover:text-sky-700 cursor-pointer">
+                                    <span x-text="showToken ? 'Sembunyi' : 'Lihat'">Lihat</span>
+                                </button>
+                            </div>
                             <span class="text-[11px] text-slate-400">Didapatkan dari @BotFather di Telegram</span>
                         </div>
 
@@ -407,15 +429,131 @@
                         </div>
                     </div>
 
-                    <div class="flex items-center justify-between pt-2">
-                        <span class="text-[11px] text-slate-400">
-                            Tersimpan aman di database tabel <code>integrations</code>.
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-2 border-t border-slate-100">
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="font-semibold text-slate-700">URL Endpoint Webhook</label>
+                                <button type="button"
+                                        @click="webhookUrl = @js(url('/api/telegram/webhook'))"
+                                        class="text-[11px] text-sky-700 hover:underline font-medium cursor-pointer">
+                                    ↺ Gunakan URL Server Ini
+                                </button>
+                            </div>
+                            <input type="url" name="webhook_url" x-model="webhookUrl"
+                                   placeholder="{{ url('/api/telegram/webhook') }}"
+                                   class="w-full text-xs font-mono rounded-lg border-slate-300 py-2 px-3 focus:border-sky-500">
+                            <span class="text-[11px] text-slate-400">Wajib diawali <code>https://</code> untuk didaftarkan ke Telegram</span>
+                        </div>
+
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="font-semibold text-slate-700">Webhook Secret Token</label>
+                                <button type="button" @click="generateSecret()"
+                                        class="text-[11px] text-sky-700 hover:underline font-medium cursor-pointer">
+                                    🎲 Buat Secret Otomatis
+                                </button>
+                            </div>
+                            <div class="relative">
+                                <input :type="showSecret ? 'text' : 'password'" name="webhook_secret" x-model="webhookSecret"
+                                       placeholder="Kosongkan atau klik Buat Secret Otomatis"
+                                       class="w-full text-xs font-mono rounded-lg border-slate-300 py-2 pl-3 pr-16 focus:border-sky-500">
+                                <button type="button" @click="showSecret = !showSecret"
+                                        class="absolute inset-y-0 right-0 px-2.5 text-[11px] font-semibold text-slate-500 hover:text-sky-700 cursor-pointer">
+                                    <span x-text="showSecret ? 'Sembunyi' : 'Lihat'">Lihat</span>
+                                </button>
+                            </div>
+                            <span class="text-[11px] text-slate-400">Disinkronkan otomatis ke Telegram saat mendaftarkan webhook</span>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                        <span class="text-[11px] text-slate-500">
+                            💡 Klik <strong>Simpan & Hubungkan Webhook Otomatis</strong> agar tidak perlu menjalankan <code>curl</code> atau mengedit <code>.env</code>.
                         </span>
-                        <button type="submit" class="nara-btn-primary text-xs py-1.5 px-4">
-                            Simpan Telegram Config
-                        </button>
+                        <div class="flex items-center gap-2 flex-wrap shrink-0">
+                            <button type="submit" name="auto_register_webhook" value="0" class="nara-btn-secondary text-xs py-2 px-3.5 cursor-pointer">
+                                Simpan Saja
+                            </button>
+                            <button type="submit" name="auto_register_webhook" value="1" class="nara-btn-primary text-xs py-2 px-4 cursor-pointer">
+                                🔗 Simpan & Hubungkan Webhook Otomatis
+                            </button>
+                        </div>
                     </div>
                 </form>
+
+                {{-- Panel Status & Diagnostik Webhook Otomatis --}}
+                @php
+                    $liveWh = session('telegram_webhook_status');
+                    $registeredUrl = $liveWh['url'] ?? $telegramConfig['webhook_registered_url'] ?? '';
+                    $botUsername = $liveWh['bot_username'] ?? $telegramConfig['bot_username'] ?? '';
+                @endphp
+                <div class="p-4 rounded-xl border {{ ! empty($registeredUrl) ? 'bg-emerald-50/50 border-emerald-200' : 'bg-slate-50 border-slate-200' }} mb-5 space-y-3">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div class="space-y-0.5">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h4 class="text-xs font-bold text-slate-800">🌐 Status Koneksi Webhook Telegram</h4>
+                                @if (! empty($registeredUrl))
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800">
+                                        ✓ Terdaftar di Telegram
+                                    </span>
+                                @else
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-amber-100 text-amber-800">
+                                        Belum Didaftarkan / Belum Dicek
+                                    </span>
+                                @endif
+
+                                @if (! empty($botUsername))
+                                    <a href="https://t.me/{{ $botUsername }}" target="_blank" class="text-xs font-mono font-bold text-sky-700 hover:underline">
+                                        @{{ $botUsername }} ↗
+                                    </a>
+                                @endif
+                            </div>
+                            <p class="text-[11px] text-slate-600 font-mono break-all">
+                                URL Aktif: <strong>{{ $registeredUrl ?: 'Belum ada webhook terdaftar' }}</strong>
+                                @if (! empty($telegramConfig['webhook_synced_at']))
+                                    <span class="text-slate-400 font-sans">• Dicek: {{ $telegramConfig['webhook_synced_at'] }}</span>
+                                @endif
+                            </p>
+                        </div>
+
+                        <div class="flex items-center gap-2 flex-wrap shrink-0">
+                            <form method="POST" action="{{ route('panel.settings.integrations.telegram.webhook-check') }}">
+                                @csrf
+                                <button type="submit" class="nara-btn-secondary text-xs py-1.5 px-3 cursor-pointer">
+                                    🔄 Cek Status Webhook
+                                </button>
+                            </form>
+
+                            @if (! empty($registeredUrl))
+                                <form method="POST" action="{{ route('panel.settings.integrations.telegram.webhook-delete') }}"
+                                      onsubmit="return confirm('Hapus pendaftaran webhook dari Telegram?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="text-xs font-semibold text-rose-600 hover:text-rose-800 px-2.5 py-1.5 rounded-lg hover:bg-rose-50 transition cursor-pointer">
+                                        Putuskan
+                                    </button>
+                                </form>
+                            @endif
+                        </div>
+                    </div>
+
+                    @if (is_array($liveWh))
+                        <div class="pt-2 border-t border-slate-200/70 text-xs space-y-1">
+                            <div class="flex items-center gap-4 flex-wrap text-[11px] text-slate-600">
+                                <span>Antrean Pesan (Pending): <strong>{{ $liveWh['pending_update_count'] ?? 0 }}</strong></span>
+                                @if (! empty($liveWh['last_error_message']))
+                                    <span class="text-rose-700 font-semibold">
+                                        ⚠️ Error Terakhir Telegram: {{ $liveWh['last_error_message'] }}
+                                    </span>
+                                @else
+                                    <span class="text-emerald-700 font-semibold">
+                                        ✓ Tidak ada error pengiriman dari Telegram
+                                    </span>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
+                </div>
 
                 {{-- Panduan Menghubungkan Telegram Bot --}}
                 <div class="rounded-xl border border-sky-200 bg-sky-50/40 p-4 mb-4" x-data="{ openGuide: false }">
@@ -541,9 +679,9 @@
                 </div>
 
                 {{-- Form Konfigurasi Google Calendar --}}
-                <form method="POST" action="{{ route('panel.settings.integrations.google') }}" class="space-y-4 mb-5">
+                <form method="POST" action="{{ route('panel.settings.integrations.google') }}" class="space-y-4 mb-5" x-data="{ showGoogleSecret: false, copiedRedirect: false }">
                     @csrf
-                    <div class="p-3 bg-emerald-50/60 rounded-xl border border-emerald-200/80">
+                    <div class="p-3.5 bg-emerald-50/60 rounded-xl border border-emerald-200/80">
                         <label class="flex items-center gap-2 cursor-pointer">
                             <input type="checkbox" id="google_active" name="is_active" value="1"
                                    @checked($isGoogleEnabled)
@@ -568,10 +706,16 @@
 
                         <div>
                             <label class="block font-semibold text-slate-700 mb-1">Google Client Secret</label>
-                            <input type="password" name="client_secret"
-                                   value="{{ old('client_secret', $googleConfig['client_secret']) }}"
-                                   placeholder="GOCSPX-..."
-                                   class="w-full text-xs font-mono rounded-lg border-slate-300 py-2 px-3 focus:border-sky-500">
+                            <div class="relative">
+                                <input :type="showGoogleSecret ? 'text' : 'password'" name="client_secret"
+                                       value="{{ old('client_secret', $googleConfig['client_secret']) }}"
+                                       placeholder="GOCSPX-..."
+                                       class="w-full text-xs font-mono rounded-lg border-slate-300 py-2 pl-3 pr-16 focus:border-sky-500">
+                                <button type="button" @click="showGoogleSecret = !showGoogleSecret"
+                                        class="absolute inset-y-0 right-0 px-2.5 text-[11px] font-semibold text-slate-500 hover:text-sky-700 cursor-pointer">
+                                    <span x-text="showGoogleSecret ? 'Sembunyi' : 'Lihat'">Lihat</span>
+                                </button>
+                            </div>
                         </div>
 
                         <div>
@@ -583,13 +727,26 @@
                         </div>
                     </div>
 
+                    <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                        <div class="min-w-0">
+                            <span class="text-[11px] font-bold text-slate-700 block">URL OAuth Callback Otomatis (Authorized Redirect URI di Google Cloud Console):</span>
+                            <code class="text-[11px] font-mono text-sky-800 break-all select-all">{{ route('panel.settings.integrations.google.callback') }}</code>
+                        </div>
+                        <button type="button"
+                                @click="navigator.clipboard.writeText(@js(route('panel.settings.integrations.google.callback'))); copiedRedirect = true; setTimeout(() => copiedRedirect = false, 2000)"
+                                class="nara-btn-secondary text-xs py-1.5 px-3 shrink-0 cursor-pointer"
+                                x-text="copiedRedirect ? '✓ Tersalin!' : '📋 Salin URL Callback'">
+                            📋 Salin URL Callback
+                        </button>
+                    </div>
+
                     <div class="flex items-center justify-between pt-1">
                         <div class="flex items-center gap-2">
                             <a href="{{ route('panel.calendar.index') }}" class="nara-btn-secondary text-xs py-1.5 px-3">
                                 📅 Buka Kalender NARA →
                             </a>
                         </div>
-                        <button type="submit" class="nara-btn-primary text-xs py-1.5 px-4">
+                        <button type="submit" class="nara-btn-primary text-xs py-1.5 px-4 cursor-pointer">
                             Simpan Google Config
                         </button>
                     </div>

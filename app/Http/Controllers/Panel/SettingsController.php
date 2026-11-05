@@ -119,6 +119,7 @@ class SettingsController extends Controller
 
     /**
      * Simpan pengaturan integrasi Telegram dinamis ke database (Fase 2).
+     * Mendukung pendaftaran Webhook otomatis ke server Telegram tanpa perlu perintah curl/SSH.
      */
     public function updateTelegramIntegration(Request $request): RedirectResponse
     {
@@ -128,21 +129,153 @@ class SettingsController extends Controller
             'is_active' => 'nullable|boolean',
             'bot_token' => 'nullable|string|max:255',
             'chat_id' => 'nullable|string|max:64',
+            'webhook_url' => 'nullable|url|max:255',
             'webhook_secret' => 'nullable|string|max:255',
+            'auto_register_webhook' => 'nullable|boolean',
         ]);
+
+        $webhookUrl = trim((string) ($data['webhook_url'] ?? '')) ?: url('/api/telegram/webhook');
+        $webhookSecret = trim((string) ($data['webhook_secret'] ?? ''));
 
         $this->integrations->updateTelegram($user, [
             'is_active' => $request->boolean('is_active'),
             'bot_token' => $data['bot_token'] ?? '',
             'chat_id' => $data['chat_id'] ?? '',
-            'webhook_secret' => $data['webhook_secret'] ?? '',
+            'webhook_url' => $webhookUrl,
+            'webhook_secret' => $webhookSecret,
         ]);
 
         $statusStr = $request->boolean('is_active') ? 'diaktifkan' : 'dinonaktifkan';
+        $toastMsg = "Pengaturan integrasi Telegram berhasil disimpan ({$statusStr}).";
+
+        // Bila pengguna menekan tombol "Simpan & Daftarkan Webhook Otomatis"
+        if ($request->boolean('auto_register_webhook')) {
+            return $this->performWebhookRegistration($user, $webhookUrl, $webhookSecret, $toastMsg);
+        }
 
         return redirect()
-            ->route('panel.settings.index')
-            ->with('toast', "Pengaturan integrasi Telegram berhasil diperbarui ({$statusStr}).");
+            ->to(route('panel.settings.index') . '#integrations')
+            ->with('toast', $toastMsg);
+    }
+
+    /**
+     * Daftarkan / sinkronkan URL Webhook & Secret Token ke Telegram API secara otomatis (1-Klik).
+     */
+    public function syncTelegramWebhook(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $config = $this->integrations->getTelegramConfig($user);
+
+        $webhookUrl = trim((string) $request->input('webhook_url', $config['webhook_url'])) ?: url('/api/telegram/webhook');
+        $webhookSecret = trim((string) $request->input('webhook_secret', $config['webhook_secret']));
+
+        $this->integrations->updateTelegram($user, [
+            'webhook_url' => $webhookUrl,
+            'webhook_secret' => $webhookSecret,
+        ]);
+
+        return $this->performWebhookRegistration($user, $webhookUrl, $webhookSecret);
+    }
+
+    /**
+     * Cek status live Webhook & info Bot dari server Telegram (getWebhookInfo & getMe).
+     */
+    public function checkTelegramWebhook(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $client = \App\Integrations\Telegram\TelegramClient::forUser($user);
+
+        if (! $client->isConfigured()) {
+            return redirect()
+                ->to(route('panel.settings.index') . '#integrations')
+                ->withErrors(['general' => 'Bot Token belum diisi. Simpan Bot Token terlebih dahulu.']);
+        }
+
+        $status = $client->getWebhookStatus();
+
+        if (! $status['ok']) {
+            return redirect()
+                ->to(route('panel.settings.index') . '#integrations')
+                ->withErrors(['general' => 'Gagal memeriksa status bot: ' . ($status['error'] ?? 'Unknown error')]);
+        }
+
+        $this->integrations->updateTelegram($user, [
+            'bot_username' => $status['bot_username'] ?? '',
+            'webhook_registered_url' => $status['url'] ?? '',
+            'webhook_synced_at' => Carbon::now($user->displayTimezone())->format('d M Y H:i:s'),
+        ]);
+
+        return redirect()
+            ->to(route('panel.settings.index') . '#integrations')
+            ->with('telegram_webhook_status', $status)
+            ->with('toast', "Status bot @{$status['bot_username']} berhasil diperbarui dari Telegram API.");
+    }
+
+    /**
+     * Putuskan / hapus pendaftaran Webhook di Telegram.
+     */
+    public function deleteTelegramWebhook(Request $request): RedirectResponse
+    {
+        $user = $request->user();
+        $client = \App\Integrations\Telegram\TelegramClient::forUser($user);
+
+        $res = $client->deleteWebhook();
+
+        if ($res['ok']) {
+            $this->integrations->updateTelegram($user, [
+                'webhook_registered_url' => '',
+                'webhook_synced_at' => Carbon::now($user->displayTimezone())->format('d M Y H:i:s'),
+            ]);
+
+            return redirect()
+                ->to(route('panel.settings.index') . '#integrations')
+                ->with('toast', 'Webhook Telegram berhasil dihapus.');
+        }
+
+        return redirect()
+            ->to(route('panel.settings.index') . '#integrations')
+            ->withErrors(['general' => 'Gagal menghapus webhook: ' . $res['description']]);
+    }
+
+    private function performWebhookRegistration($user, string $webhookUrl, string $webhookSecret, string $prefixMsg = ''): RedirectResponse
+    {
+        $client = \App\Integrations\Telegram\TelegramClient::forUser($user);
+
+        if (! $client->isConfigured()) {
+            return redirect()
+                ->to(route('panel.settings.index') . '#integrations')
+                ->withErrors(['general' => 'Bot Token belum diisi. Silakan masukkan Bot Token dari @BotFather.']);
+        }
+
+        if (! str_starts_with(strtolower($webhookUrl), 'https://')) {
+            return redirect()
+                ->to(route('panel.settings.index') . '#integrations')
+                ->withErrors(['general' => "Telegram mewajibkan URL Webhook menggunakan HTTPS (saat ini: {$webhookUrl}). Gunakan domain HTTPS produksi atau Ngrok untuk pengujian lokal."]);
+        }
+
+        $res = $client->setWebhook($webhookUrl, $webhookSecret);
+        $status = $client->getWebhookStatus();
+
+        if ($res['ok']) {
+            $this->integrations->updateTelegram($user, [
+                'bot_username' => $status['bot_username'] ?? '',
+                'webhook_registered_url' => $status['url'] ?? $webhookUrl,
+                'webhook_synced_at' => Carbon::now($user->displayTimezone())->format('d M Y H:i:s'),
+            ]);
+
+            $botTag = ! empty($status['bot_username']) ? " (@{$status['bot_username']})" : '';
+            $fullMsg = trim($prefixMsg . " ✓ Webhook{$botTag} & daftar perintah (/help, /today, /tasks, dll.) berhasil didaftarkan otomatis ke Telegram!");
+
+            return redirect()
+                ->to(route('panel.settings.index') . '#integrations')
+                ->with('telegram_webhook_status', $status)
+                ->with('status', $fullMsg)
+                ->with('toast', $fullMsg);
+        }
+
+        return redirect()
+            ->to(route('panel.settings.index') . '#integrations')
+            ->withErrors(['general' => 'Gagal mendaftarkan Webhook ke Telegram: ' . $res['description']]);
     }
 
     /**

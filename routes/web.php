@@ -85,6 +85,9 @@ Route::middleware(['auth', 'two-factor'])
         Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
         Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
         Route::post('settings/integrations/telegram', [SettingsController::class, 'updateTelegramIntegration'])->name('settings.integrations.telegram');
+        Route::post('settings/integrations/telegram/webhook-sync', [SettingsController::class, 'syncTelegramWebhook'])->name('settings.integrations.telegram.webhook-sync');
+        Route::post('settings/integrations/telegram/webhook-check', [SettingsController::class, 'checkTelegramWebhook'])->name('settings.integrations.telegram.webhook-check');
+        Route::delete('settings/integrations/telegram/webhook', [SettingsController::class, 'deleteTelegramWebhook'])->name('settings.integrations.telegram.webhook-delete');
         Route::post('settings/integrations/google', [SettingsController::class, 'updateGoogleIntegration'])->name('settings.integrations.google');
         Route::get('settings/integrations/google/redirect', [SettingsController::class, 'redirectToGoogle'])->name('settings.integrations.google.redirect');
         Route::get('settings/integrations/google/callback', [SettingsController::class, 'handleGoogleCallback'])->name('settings.integrations.google.callback');

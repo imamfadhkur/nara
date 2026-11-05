@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Log;
 class TelegramWebhookHandler
 {
     public function __construct(
-        private readonly TelegramClient $client,
+        private TelegramClient $client,
         private readonly InboxService $inbox,
         private readonly CapacityService $capacity,
         private readonly TaskService $tasks,
@@ -32,12 +32,12 @@ class TelegramWebhookHandler
      */
     public function handle(array $payload): void
     {
-        $message = $payload['message'] ?? null;
+        $message = $payload['message'] ?? $payload['edited_message'] ?? null;
         if (! $message) {
             return;
         }
 
-        $chatId = (string) ($message['chat']['id'] ?? '');
+        $chatId = trim((string) ($message['chat']['id'] ?? ''));
         $messageId = (string) ($message['message_id'] ?? '');
         $text = trim((string) ($message['text'] ?? ''));
 
@@ -45,12 +45,26 @@ class TelegramWebhookHandler
             return;
         }
 
-        // 1. Allowlist Keamanan (D-12 & Bagian 8.6): Hanya chat_id terdaftar yang dilayani
+        // 1. Allowlist Keamanan (D-12 & Bagian 8.6): Cari user berdasarkan telegram_chat_id atau tabel integrations
         $user = User::where('telegram_chat_id', $chatId)->first();
+        if (! $user) {
+            $integration = \App\Models\Integration::query()
+                ->where('provider', IntegrationService::TELEGRAM)
+                ->get()
+                ->first(fn ($item) => trim((string) ($item->meta['chat_id'] ?? '')) === $chatId);
+
+            if ($integration) {
+                $user = User::find($integration->user_id);
+            }
+        }
+
         if (! $user) {
             Log::info("Telegram webhook diabaikan (chat_id {$chatId} tidak terdaftar di allowlist).");
             return;
         }
+
+        // Gunakan TelegramClient dengan token spesifik milik user (dari tabel integrations / fallback .env)
+        $this->client = TelegramClient::forUser($user);
 
         // 1b. Aturan Integrasi Aktif/Nonaktif (Fase 2)
         if (! $this->integrations->isTelegramEnabled($user)) {
@@ -66,14 +80,16 @@ class TelegramWebhookHandler
 
         // 3. Routing Perintah
         if (str_starts_with($text, '/')) {
-            // Dukungan klik cepat /done_123
-            if (preg_match('/^\/done_(\d+)$/i', $text, $matches)) {
+            // Dukungan klik cepat /done_123 (termasuk jika ada @nama_bot di belakangnya)
+            if (preg_match('/^\/done_(\d+)(?:@\S+)?$/i', $text, $matches)) {
                 $this->handleDone($user, $chatId, $matches[1]);
                 return;
             }
 
             $parts = explode(' ', $text, 2);
-            $command = strtolower($parts[0]);
+            $rawCommand = strtolower($parts[0]);
+            // Bersihkan suffix @bot_username bila dikirim di grup atau autocomplete Telegram
+            $command = explode('@', $rawCommand)[0];
             $argument = trim($parts[1] ?? '');
 
             match ($command) {
@@ -84,6 +100,7 @@ class TelegramWebhookHandler
                 '/cap' => $this->handleCapacity($user, $chatId),
                 '/today' => $this->handleToday($user, $chatId),
                 '/done' => $this->handleDone($user, $chatId, $argument),
+                '/start', '/help' => $this->handleHelp($chatId),
                 default => $this->handleHelp($chatId),
             };
         } else {
