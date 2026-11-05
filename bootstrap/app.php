@@ -17,6 +17,15 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        $middleware->trustProxies(at: '*');
+
+        $middleware->validateCsrfTokens(except: [
+            '/',
+            'api/*',
+            'telegram/*',
+            'panel/telegram/*',
+        ]);
+
         $middleware->web(append: [
             SecurityHeaders::class,
         ]);

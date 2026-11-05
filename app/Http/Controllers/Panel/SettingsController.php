@@ -247,6 +247,10 @@ class SettingsController extends Controller
                 ->withErrors(['general' => 'Bot Token belum diisi. Silakan masukkan Bot Token dari @BotFather.']);
         }
 
+        if (! str_contains($webhookUrl, 'localhost') && ! str_contains($webhookUrl, '127.0.0.1')) {
+            $webhookUrl = (string) preg_replace('/^http:/i', 'https:', $webhookUrl);
+        }
+
         if (! str_starts_with(strtolower($webhookUrl), 'https://')) {
             return redirect()
                 ->to(route('panel.settings.index') . '#integrations')
@@ -258,6 +262,7 @@ class SettingsController extends Controller
 
         if ($res['ok']) {
             $this->integrations->updateTelegram($user, [
+                'webhook_url' => $webhookUrl,
                 'bot_username' => $status['bot_username'] ?? '',
                 'webhook_registered_url' => $status['url'] ?? $webhookUrl,
                 'webhook_synced_at' => Carbon::now($user->displayTimezone())->format('d M Y H:i:s'),

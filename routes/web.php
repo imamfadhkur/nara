@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Api\TelegramWebhookController;
 use App\Http\Controllers\Panel\CalendarController;
 use App\Http\Controllers\Panel\DocumentationController;
 use App\Http\Controllers\Panel\FocusController;
@@ -23,6 +24,11 @@ Route::get('/', function () {
         ? redirect()->route('panel.today')
         : redirect()->route('login');
 });
+
+// Fallback & alternatif endpoint Webhook Telegram (mencegah 405 Not Allowed akibat rewrite server/proxy)
+Route::post('/', [TelegramWebhookController::class, 'handle']);
+Route::match(['get', 'post'], '/telegram/webhook', [TelegramWebhookController::class, 'handle'])->name('telegram.webhook');
+Route::match(['get', 'post'], '/panel/telegram/webhook', [TelegramWebhookController::class, 'handle'])->name('panel.telegram.webhook');
 
 Route::redirect('/dashboard', '/panel/today')
     ->middleware(['auth'])

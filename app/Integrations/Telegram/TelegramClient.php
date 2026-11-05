@@ -101,6 +101,9 @@ class TelegramClient
                 $payload['secret_token'] = $secretToken;
             }
 
+            // Bersihkan pendaftaran lama terlebih dahulu agar last_error_message di Telegram di-reset
+            Http::timeout(10)->post("{$this->baseUrl}/deleteWebhook");
+
             $response = Http::timeout(15)->post("{$this->baseUrl}/setWebhook", $payload);
             $json = $response->json() ?? [];
 

@@ -13,6 +13,13 @@ class TelegramWebhookController extends Controller
 {
     public function handle(Request $request, TelegramWebhookHandler $handler): JsonResponse
     {
+        if ($request->isMethod('GET')) {
+            return response()->json([
+                'ok' => true,
+                'status' => 'NARA Telegram Webhook endpoint is active and ready to receive POST updates.',
+            ]);
+        }
+
         $envSecret = (string) (config('nara.telegram.webhook_secret') ?? '');
         $hasDbConfig = false;
         $dbSecret = '';

@@ -5,7 +5,7 @@
             activeTab: (
                 window.location.hash === '#account' || '{{ session('status') }}' === 'profile-updated' || '{{ session('status') }}' === 'password-updated' || {{ ($errors->has('name') || $errors->has('email') || $errors->updatePassword->isNotEmpty()) ? 'true' : 'false' }}
                     ? 'account'
-                    : (window.location.hash === '#integrations' ? 'integrations' : (window.location.hash === '#security' ? 'security' : 'general'))
+                    : (window.location.hash === '#integrations' || {{ (session()->has('telegram_webhook_status') || $errors->has('general') || request()->query('tab') === 'integrations') ? 'true' : 'false' }} ? 'integrations' : (window.location.hash === '#security' ? 'security' : 'general'))
             ),
             setTab(tab) {
                 this.activeTab = tab;
@@ -13,6 +13,13 @@
             }
         }"
     >
+        {{-- Alert Error Umum (mis. validasi Webhook / Integrasi) --}}
+        @if ($errors->has('general'))
+            <div class="p-4 bg-rose-50 rounded-xl border border-rose-200 text-xs text-rose-800 flex items-start gap-2.5 shadow-xs" role="alert">
+                <span class="text-base leading-none">⚠️</span>
+                <div class="font-medium">{{ $errors->first('general') }}</div>
+            </div>
+        @endif
         {{-- Box Kode Pemulihan 2FA jika baru dibuat --}}
         @if ($recoveryCodes)
             <div class="p-5 bg-amber-50 rounded-xl border border-amber-300 shadow-sm" role="alert">
@@ -431,18 +438,26 @@
 
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs pt-2 border-t border-slate-100">
                         <div>
-                            <div class="flex items-center justify-between mb-1">
+                            <div class="flex items-center justify-between mb-1 gap-1 flex-wrap">
                                 <label class="font-semibold text-slate-700">URL Endpoint Webhook</label>
-                                <button type="button"
-                                        @click="webhookUrl = @js(url('/api/telegram/webhook'))"
-                                        class="text-[11px] text-sky-700 hover:underline font-medium cursor-pointer">
-                                    ↺ Gunakan URL Server Ini
-                                </button>
+                                <div class="flex items-center gap-2">
+                                    <button type="button"
+                                            @click="webhookUrl = @js(preg_replace('/^http:/i', 'https:', url('/api/telegram/webhook')))"
+                                            class="text-[11px] text-sky-700 hover:underline font-medium cursor-pointer">
+                                        ↺ Default (/api/...)
+                                    </button>
+                                    <span class="text-slate-300">|</span>
+                                    <button type="button"
+                                            @click="webhookUrl = @js(preg_replace('/^http:/i', 'https:', url('/telegram/webhook')))"
+                                            class="text-[11px] text-indigo-700 hover:underline font-medium cursor-pointer">
+                                        ↺ Alternatif (/telegram/...)
+                                    </button>
+                                </div>
                             </div>
                             <input type="url" name="webhook_url" x-model="webhookUrl"
-                                   placeholder="{{ url('/api/telegram/webhook') }}"
+                                   placeholder="{{ preg_replace('/^http:/i', 'https:', url('/api/telegram/webhook')) }}"
                                    class="w-full text-xs font-mono rounded-lg border-slate-300 py-2 px-3 focus:border-sky-500">
-                            <span class="text-[11px] text-slate-400">Wajib diawali <code>https://</code> untuk didaftarkan ke Telegram</span>
+                            <span class="text-[11px] text-slate-400">Mendukung <code>/api/telegram/webhook</code> maupun <code>/telegram/webhook</code></span>
                         </div>
 
                         <div>

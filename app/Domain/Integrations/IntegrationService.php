@@ -73,13 +73,21 @@ class IntegrationService
         $meta = $integration->meta ?? [];
 
         $defaultWebhookUrl = url('/api/telegram/webhook');
+        if (! str_contains($defaultWebhookUrl, 'localhost') && ! str_contains($defaultWebhookUrl, '127.0.0.1')) {
+            $defaultWebhookUrl = (string) preg_replace('/^http:/i', 'https:', $defaultWebhookUrl);
+        }
+
+        $savedWebhookUrl = (string) (! empty($meta['webhook_url']) ? $meta['webhook_url'] : $defaultWebhookUrl);
+        if (! str_contains($savedWebhookUrl, 'localhost') && ! str_contains($savedWebhookUrl, '127.0.0.1')) {
+            $savedWebhookUrl = (string) preg_replace('/^http:/i', 'https:', $savedWebhookUrl);
+        }
 
         return [
             'is_active' => (bool) $integration->is_active,
             'bot_token' => (string) ($meta['bot_token'] ?? config('nara.telegram.bot_token') ?? ''),
             'chat_id' => (string) ($meta['chat_id'] ?? $user->telegram_chat_id ?? ''),
             'webhook_secret' => (string) (array_key_exists('webhook_secret', $meta) ? $meta['webhook_secret'] : (config('nara.telegram.webhook_secret') ?? '')),
-            'webhook_url' => (string) (! empty($meta['webhook_url']) ? $meta['webhook_url'] : $defaultWebhookUrl),
+            'webhook_url' => $savedWebhookUrl,
             'bot_username' => (string) ($meta['bot_username'] ?? ''),
             'webhook_registered_url' => (string) ($meta['webhook_registered_url'] ?? ''),
             'webhook_synced_at' => $meta['webhook_synced_at'] ?? null,
