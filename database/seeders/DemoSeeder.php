@@ -42,7 +42,7 @@ class DemoSeeder extends Seeder
 {
     public const DEMO_EMAIL = 'imam@nara.local';
 
-    public const DEMO_PASSWORD = 'password-imam-nara-2026';
+    public const DEMO_PASSWORD = 'nara-2026';
 
     public const DEMO_2FA_SECRET = 'JBSWY3DPEHPK3PXP';
 

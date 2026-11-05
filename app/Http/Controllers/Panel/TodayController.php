@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Panel;
 
 use App\Domain\Scheduling\CapacityService;
 use App\Domain\Settings\SettingService;
+use App\Domain\Tasks\MatrixClassifier;
 use App\Http\Controllers\Controller;
 use App\Models\Output;
 use App\Models\Project;
@@ -20,6 +21,7 @@ class TodayController extends Controller
     public function __construct(
         private readonly CapacityService $capacity,
         private readonly SettingService $settings,
+        private readonly MatrixClassifier $classifier,
     ) {}
 
     public function __invoke(Request $request): View
@@ -98,6 +100,56 @@ class TodayController extends Controller
             ->with('project')
             ->get();
 
+        // 8. Task prioritas & terdekat berdasarkan Matrix Eisenhower (Bagian 7.6)
+        $openTasks = Task::query()
+            ->whereHas('project', fn ($q) => $q->where('user_id', $user->id)->whereNull('deleted_at'))
+            ->whereIn('status', [TaskStatus::InProgress, TaskStatus::Todo])
+            ->with(['project.goal.lifeDomain', 'subtasks', 'schedules'])
+            ->get();
+
+        $quadrantWeights = [
+            MatrixClassifier::DO => 1,
+            MatrixClassifier::SCHEDULE => 2,
+            MatrixClassifier::DELEGATE => 3,
+            MatrixClassifier::SOMEDAY => 4,
+        ];
+
+        $priorityWeights = [
+            'high' => 1,
+            'medium' => 2,
+            'low' => 3,
+        ];
+
+        $matrixQuadrants = [
+            MatrixClassifier::DO => collect(),
+            MatrixClassifier::SCHEDULE => collect(),
+            MatrixClassifier::DELEGATE => collect(),
+            MatrixClassifier::SOMEDAY => collect(),
+        ];
+
+        $matrixTasks = $openTasks->map(function (Task $task) use ($today) {
+            $quadrant = $this->classifier->classify($task, $today);
+            $task->setAttribute('matrix_quadrant', $quadrant);
+            $task->setAttribute('matrix_label', $this->classifier->label($quadrant));
+            $task->setAttribute('matrix_tone', $this->classifier->tone($quadrant));
+
+            return $task;
+        })->sortBy(function (Task $task) use ($quadrantWeights, $priorityWeights) {
+            $qWeight = $quadrantWeights[$task->getAttribute('matrix_quadrant')] ?? 9;
+            $statusWeight = $task->status === TaskStatus::InProgress ? 0 : 1;
+            $dueWeight = $task->due_date ? $task->due_date->timestamp : 9999999999;
+            $pWeight = $priorityWeights[$task->priority->value] ?? 2;
+
+            return sprintf('%d-%d-%010d-%d', $qWeight, $statusWeight, $dueWeight, $pWeight);
+        })->values();
+
+        foreach ($matrixTasks as $task) {
+            $q = $task->getAttribute('matrix_quadrant');
+            if (isset($matrixQuadrants[$q])) {
+                $matrixQuadrants[$q]->push($task);
+            }
+        }
+
         return view('panel.today.index', [
             'today' => $today,
             'todaySchedules' => $todaySchedules,
@@ -109,6 +161,8 @@ class TodayController extends Controller
             'dueTomorrowUnscheduled' => $dueTomorrowUnscheduled,
             'stagnationDays' => $stagnationDays,
             'recentOutputs' => $recentOutputs,
+            'matrixTasks' => $matrixTasks,
+            'matrixQuadrants' => $matrixQuadrants,
         ]);
     }
 }

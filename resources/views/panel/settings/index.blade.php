@@ -2,7 +2,11 @@
     <div
         class="space-y-6 max-w-4xl"
         x-data="{
-            activeTab: (window.location.hash === '#integrations' ? 'integrations' : (window.location.hash === '#security' ? 'security' : 'general')),
+            activeTab: (
+                window.location.hash === '#account' || '{{ session('status') }}' === 'profile-updated' || '{{ session('status') }}' === 'password-updated' || {{ ($errors->has('name') || $errors->has('email') || $errors->updatePassword->isNotEmpty()) ? 'true' : 'false' }}
+                    ? 'account'
+                    : (window.location.hash === '#integrations' ? 'integrations' : (window.location.hash === '#security' ? 'security' : 'general'))
+            ),
             setTab(tab) {
                 this.activeTab = tab;
                 window.location.hash = tab;
@@ -31,6 +35,16 @@
 
         {{-- Navigasi Tab Pengelompokan Pengaturan --}}
         <div class="flex items-center gap-2 border-b border-slate-200 pb-2 overflow-x-auto">
+            <button
+                type="button"
+                @click="setTab('account')"
+                :class="activeTab === 'account' ? 'bg-sky-600 text-white shadow-xs font-bold' : 'bg-white text-slate-600 hover:bg-slate-100 font-medium'"
+                class="px-4 py-2 rounded-lg text-xs transition flex items-center gap-2 shrink-0 border border-slate-200"
+            >
+                <span>👤</span>
+                <span>Profil & Akun</span>
+            </button>
+
             <button
                 type="button"
                 @click="setTab('general')"
@@ -66,6 +80,40 @@
                     <span class="px-1.5 py-0.2 rounded-full bg-amber-100 text-amber-800 text-[10px] font-bold">Opsional</span>
                 @endif
             </button>
+        </div>
+
+        {{-- ======================================================== --}}
+        {{-- TAB 0: PROFIL & AKUN PENGGUNA                            --}}
+        {{-- ======================================================== --}}
+        <div x-show="activeTab === 'account'" class="space-y-6" style="display: none;">
+            {{-- Kartu 1: Informasi Profil Akun --}}
+            <div class="nara-card p-6">
+                @include('profile.partials.update-profile-information-form', ['redirectBackToSettings' => true])
+            </div>
+
+            {{-- Kartu 2: Ganti Kata Sandi (Password) --}}
+            <div class="nara-card p-6">
+                @include('profile.partials.update-password-form')
+            </div>
+
+            {{-- Kartu 3: Tautan Pintas ke 2FA --}}
+            <div class="p-4 bg-sky-50/60 rounded-xl border border-sky-200/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+                <div class="flex items-center gap-2.5">
+                    <span class="text-xl">🔐</span>
+                    <div>
+                        <strong class="text-slate-800">Autentikasi Dua Langkah (2FA TOTP)</strong>
+                        <p class="text-slate-500 text-[11px] mt-0.5">
+                            Status saat ini:
+                            <span class="font-semibold {{ $user->hasTwoFactorEnabled() ? 'text-emerald-700' : 'text-amber-700' }}">
+                                {{ $user->hasTwoFactorEnabled() ? 'Aktif' : 'Belum Aktif' }}
+                            </span>
+                        </p>
+                    </div>
+                </div>
+                <button type="button" @click="setTab('security')" class="nara-btn-secondary text-xs py-1.5 px-3 self-start sm:self-auto">
+                    Kelola 2FA →
+                </button>
+            </div>
         </div>
 
         {{-- ======================================================== --}}
@@ -794,9 +842,15 @@
                                         <div @click.outside="open = false" class="bg-white rounded-xl p-5 max-w-sm w-full">
                                             <h4 class="font-semibold text-sm text-slate-900">Konfirmasi Kata Sandi</h4>
                                             <p class="text-xs text-slate-600 mt-1 mb-3">Masukkan kata sandi saat ini untuk membuat ulang kode pemulihan:</p>
-                                            <form method="POST" action="{{ route('panel.settings.two-factor.recovery') }}" class="space-y-3">
+                                            <form method="POST" action="{{ route('panel.settings.two-factor.recovery') }}" class="space-y-3" x-data="{ showPass: false }">
                                                 @csrf
-                                                <input type="password" name="password" required placeholder="Kata sandi..." class="nara-input text-xs">
+                                                <div class="relative">
+                                                    <input :type="showPass ? 'text' : 'password'" name="password" required placeholder="Kata sandi..." class="nara-input text-xs pr-9">
+                                                    <button type="button" @click="showPass = !showPass" tabindex="-1" class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none transition cursor-pointer" :title="showPass ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'">
+                                                        <svg x-show="!showPass" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                                        <svg x-show="showPass" x-cloak class="w-3.5 h-3.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
+                                                    </button>
+                                                </div>
                                                 <div class="flex justify-end gap-2">
                                                     <button type="button"
                                                             @click="open = false"
@@ -842,10 +896,16 @@
                                         <div @click.outside="open = false" class="bg-white rounded-xl p-5 max-w-sm w-full">
                                             <h4 class="font-semibold text-sm text-rose-700">Matikan 2FA Akun</h4>
                                             <p class="text-xs text-slate-600 mt-1 mb-3">Masukkan kata sandi saat ini untuk menonaktifkan autentikasi dua langkah:</p>
-                                            <form method="POST" action="{{ route('panel.settings.two-factor.disable') }}" class="space-y-3">
+                                            <form method="POST" action="{{ route('panel.settings.two-factor.disable') }}" class="space-y-3" x-data="{ showPass: false }">
                                                 @csrf
                                                 @method('DELETE')
-                                                <input type="password" name="password" required placeholder="Kata sandi..." class="nara-input text-xs">
+                                                <div class="relative">
+                                                    <input :type="showPass ? 'text' : 'password'" name="password" required placeholder="Kata sandi..." class="nara-input text-xs pr-9">
+                                                    <button type="button" @click="showPass = !showPass" tabindex="-1" class="absolute inset-y-0 right-0 pr-2.5 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none transition cursor-pointer" :title="showPass ? 'Sembunyikan kata sandi' : 'Tampilkan kata sandi'">
+                                                        <svg x-show="!showPass" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                                                        <svg x-show="showPass" x-cloak class="w-3.5 h-3.5 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l18 18"/></svg>
+                                                    </button>
+                                                </div>
                                                 <div class="flex justify-end gap-2">
                                                     <button type="button" @click="open = false" class="nara-btn-secondary text-xs">Batal</button>
                                                     <button type="submit"

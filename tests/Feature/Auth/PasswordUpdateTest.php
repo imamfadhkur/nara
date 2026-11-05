@@ -42,3 +42,43 @@ test('correct password must be provided to update password', function () {
         ->assertSessionHasErrorsIn('updatePassword', 'current_password')
         ->assertRedirect('/profile');
 });
+
+test('password with at least 6 characters can be updated', function () {
+    $user = User::factory()->create([
+        'password' => Hash::make('password-lama-12'),
+    ]);
+
+    $response = $this
+        ->actingAs($user)
+        ->from('/profile')
+        ->put('/password', [
+            'current_password' => 'password-lama-12',
+            'password' => '123456',
+            'password_confirmation' => '123456',
+        ]);
+
+    $response
+        ->assertSessionHasNoErrors()
+        ->assertRedirect('/profile');
+
+    $this->assertTrue(Hash::check('123456', $user->refresh()->password));
+});
+
+test('password with less than 6 characters fails validation', function () {
+    $user = User::factory()->create([
+        'password' => Hash::make('password-lama-12'),
+    ]);
+
+    $response = $this
+        ->actingAs($user)
+        ->from('/profile')
+        ->put('/password', [
+            'current_password' => 'password-lama-12',
+            'password' => '12345',
+            'password_confirmation' => '12345',
+        ]);
+
+    $response
+        ->assertSessionHasErrorsIn('updatePassword', 'password')
+        ->assertRedirect('/profile');
+});

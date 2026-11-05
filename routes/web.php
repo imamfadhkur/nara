@@ -80,6 +80,8 @@ Route::middleware(['auth', 'two-factor'])
         Route::delete('tasks/{task}/subtasks/{subtask}', [TaskController::class, 'destroySubtask'])
             ->name('tasks.subtasks.destroy');
 
+        Route::get('profile', [ProfileController::class, 'edit'])->name('profile');
+
         Route::get('settings', [SettingsController::class, 'index'])->name('settings.index');
         Route::put('settings', [SettingsController::class, 'update'])->name('settings.update');
         Route::post('settings/integrations/telegram', [SettingsController::class, 'updateTelegramIntegration'])->name('settings.integrations.telegram');

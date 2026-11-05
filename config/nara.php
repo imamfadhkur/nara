@@ -19,7 +19,7 @@ return [
     'require_two_factor' => (bool) env('NARA_REQUIRE_2FA', false),
 
     // Panjang minimal kata sandi (Bagian 13.1).
-    'password_min_length' => (int) env('NARA_PASSWORD_MIN', 14),
+    'password_min_length' => (int) env('NARA_PASSWORD_MIN', 6),
 
     /*
     |--------------------------------------------------------------------------

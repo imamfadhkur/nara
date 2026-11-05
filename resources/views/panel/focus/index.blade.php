@@ -1,80 +1,371 @@
 <x-panel-layout title="Mode Fokus" heading="Mode Fokus (Deep Work Timer)">
-    <div class="max-w-4xl mx-auto" x-data="{
-        presetMinutes: 25,
-        secondsRemaining: 1500,
-        isRunning: false,
-        isPaused: false,
-        timerInterval: null,
-        logModalOpen: false,
-        loggedMinutes: 25,
+    @php
+        $tasksMap = $tasks->mapWithKeys(fn ($t) => [
+            $t->id => [
+                'id' => $t->id,
+                'title' => $t->title,
+                'project' => $t->project->name,
+                'due_date' => $t->due_date ? $t->due_date->format('d M Y') : null,
+                'is_overdue' => $t->isOverdue(),
+            ],
+        ]);
+    @endphp
 
-        formatTime() {
-            const m = Math.floor(this.secondsRemaining / 60);
-            const s = this.secondsRemaining % 60;
-            return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
-        },
+    <script>
+        window.naraFocusPage = function () {
+            return {
+                tasksMap: @js($tasksMap),
+                taskId: {{ $selectedTask?->id ?? 'null' }},
+                taskTitle: @js($selectedTask?->title ?? ''),
+                projectName: @js($selectedTask?->project?->name ?? ''),
+                dueDate: @js($selectedTask?->due_date?->format('d M Y')),
+                isOverdue: @js($selectedTask?->isOverdue() ?? false),
 
-        setDuration(minutes) {
-            this.pauseTimer();
-            this.presetMinutes = minutes;
-            this.secondsRemaining = minutes * 60;
-            this.loggedMinutes = minutes;
-            this.isPaused = false;
-        },
+                presetMinutes: 25,
+                secondsRemaining: 1500,
+                isRunning: false,
+                isPaused: false,
+                startedAt: null,
+                targetEndAt: null,
+                timerInterval: null,
+                logModalOpen: false,
+                loggedMinutes: 25,
+                notifPermission: ('Notification' in window) ? Notification.permission : 'unsupported',
 
-        startTimer() {
-            this.isRunning = true;
-            this.isPaused = false;
-            clearInterval(this.timerInterval);
-            this.timerInterval = setInterval(() => {
-                if (this.secondsRemaining > 0) {
-                    this.secondsRemaining--;
-                } else {
-                    this.pauseTimer();
+                init() {
+                    const params = new URLSearchParams(window.location.search);
+                    const saved = window.NaraFocusHelper ? window.NaraFocusHelper.getSession() : null;
+
+                    if (saved && saved.taskId) {
+                        const requestedTaskId = params.has('task_id') ? Number(params.get('task_id')) : null;
+                        let shouldRestore = true;
+
+                        if (requestedTaskId && requestedTaskId !== Number(saved.taskId) && (saved.status === 'running' || saved.status === 'paused')) {
+                            const switchConfirm = confirm(
+                                `Sesi fokus untuk task "${saved.taskTitle}" masih berjalan/dijeda.\n\nApakah Anda ingin menghentikan sesi tersebut dan beralih ke task baru ini?`
+                            );
+                            if (switchConfirm) {
+                                window.NaraFocusHelper.clearSession();
+                                shouldRestore = false;
+                            }
+                        }
+
+                        if (shouldRestore) {
+                            this.applyTaskData(saved.taskId, saved.taskTitle, saved.projectName);
+                            this.presetMinutes = Number(saved.presetMinutes) || 25;
+                            this.startedAt = saved.startedAt || null;
+
+                            if (saved.status === 'running' && saved.targetEndAt) {
+                                const rem = Math.max(0, Math.ceil((saved.targetEndAt - Date.now()) / 1000));
+                                if (rem > 0) {
+                                    this.secondsRemaining = rem;
+                                    this.targetEndAt = saved.targetEndAt;
+                                    this.isRunning = true;
+                                    this.isPaused = false;
+                                    this.startInterval();
+                                } else {
+                                    this.secondsRemaining = 0;
+                                    this.isRunning = false;
+                                    this.isPaused = false;
+                                    if (!saved.notified) {
+                                        saved.notified = true;
+                                        saved.status = 'completed';
+                                        window.NaraFocusHelper.saveSession(saved);
+                                        window.NaraFocusHelper.sendDesktopNotification(this.taskTitle, this.presetMinutes);
+                                    }
+                                    this.openLogModal();
+                                }
+                            } else if (saved.status === 'paused') {
+                                this.secondsRemaining = Number(saved.remainingSeconds) || (this.presetMinutes * 60);
+                                this.isRunning = false;
+                                this.isPaused = true;
+                                window.NaraFocusHelper.updateTitle(this.formatTime(), 'paused');
+                            } else if (saved.status === 'completed') {
+                                this.secondsRemaining = 0;
+                                this.isRunning = false;
+                                this.isPaused = false;
+                                this.openLogModal();
+                            }
+                        }
+                    }
+
+                    if (params.get('open_log') === '1' && !this.logModalOpen) {
+                        this.openLogModal();
+                    }
+
+                    window.addEventListener('storage', () => this.syncFromStorage());
+                    window.addEventListener('nara-focus-updated', () => this.syncFromStorage());
+                },
+
+                applyTaskData(id, fallbackTitle = '', fallbackProject = '') {
+                    this.taskId = Number(id);
+                    if (this.tasksMap && this.tasksMap[id]) {
+                        const info = this.tasksMap[id];
+                        this.taskTitle = info.title;
+                        this.projectName = info.project;
+                        this.dueDate = info.due_date;
+                        this.isOverdue = info.is_overdue;
+                    } else {
+                        this.taskTitle = fallbackTitle;
+                        this.projectName = fallbackProject;
+                        this.dueDate = null;
+                        this.isOverdue = false;
+                    }
+                },
+
+                changeTask(newId) {
+                    if ((this.isRunning || this.isPaused) && Number(newId) !== Number(this.taskId)) {
+                        if (!confirm('Timer fokus sedang aktif. Ganti task dan mulai ulang timer?')) {
+                            this.$refs.taskSelect.value = this.taskId;
+                            return;
+                        }
+                        this.resetTimer();
+                    }
+                    this.applyTaskData(newId);
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('task_id', newId);
+                    url.searchParams.delete('open_log');
+                    window.history.replaceState({}, '', url);
+                },
+
+                persistState(status, notified = false) {
+                    if (!window.NaraFocusHelper || !this.taskId) return;
+                    window.NaraFocusHelper.saveSession({
+                        taskId: this.taskId,
+                        taskTitle: this.taskTitle,
+                        projectName: this.projectName,
+                        presetMinutes: this.presetMinutes,
+                        status: status,
+                        startedAt: this.startedAt,
+                        targetEndAt: this.targetEndAt,
+                        remainingSeconds: this.secondsRemaining,
+                        notified: notified
+                    });
+                },
+
+                syncFromStorage() {
+                    const saved = window.NaraFocusHelper ? window.NaraFocusHelper.getSession() : null;
+                    if (!saved) {
+                        if (this.isRunning || this.isPaused) {
+                            this.pauseIntervalOnly();
+                            this.isRunning = false;
+                            this.isPaused = false;
+                            this.secondsRemaining = this.presetMinutes * 60;
+                        }
+                        return;
+                    }
+                    if (saved.status === 'paused' && this.isRunning) {
+                        this.pauseIntervalOnly();
+                        this.isRunning = false;
+                        this.isPaused = true;
+                        this.secondsRemaining = saved.remainingSeconds;
+                    } else if (saved.status === 'running' && !this.isRunning) {
+                        this.targetEndAt = saved.targetEndAt;
+                        this.isRunning = true;
+                        this.isPaused = false;
+                        this.startInterval();
+                    }
+                },
+
+                formatTime() {
+                    const m = Math.floor(this.secondsRemaining / 60);
+                    const s = this.secondsRemaining % 60;
+                    return String(m).padStart(2, '0') + ':' + String(s).padStart(2, '0');
+                },
+
+                setDuration(minutes) {
+                    if (this.isRunning && !confirm('Ubah durasi akan mengulang timer yang sedang berjalan. Lanjutkan?')) {
+                        return;
+                    }
+                    this.pauseIntervalOnly();
+                    this.presetMinutes = minutes;
+                    this.secondsRemaining = minutes * 60;
+                    this.loggedMinutes = minutes;
+                    this.isRunning = false;
+                    this.isPaused = false;
+                    this.startedAt = null;
+                    this.targetEndAt = null;
+                    if (window.NaraFocusHelper) {
+                        window.NaraFocusHelper.clearSession();
+                    }
+                },
+
+                requestNotifPermission(playTest = false) {
+                    if (!('Notification' in window)) return;
+                    if (Notification.permission === 'granted') {
+                        this.notifPermission = 'granted';
+                        if (playTest && window.NaraFocusHelper) {
+                            window.NaraFocusHelper.sendDesktopNotification(this.taskTitle || 'Uji Coba Mode Fokus', this.presetMinutes);
+                        }
+                        return;
+                    }
+                    Notification.requestPermission().then(permission => {
+                        this.notifPermission = permission;
+                        if (permission === 'granted' && playTest && window.NaraFocusHelper) {
+                            window.NaraFocusHelper.sendDesktopNotification(this.taskTitle || 'Notifikasi Desktop Aktif!', this.presetMinutes);
+                        }
+                    });
+                },
+
+                startTimer() {
+                    if (this.notifPermission === 'default') {
+                        this.requestNotifPermission(false);
+                    }
+                    if (this.secondsRemaining <= 0) {
+                        this.secondsRemaining = this.presetMinutes * 60;
+                    }
+                    if (!this.startedAt) {
+                        this.startedAt = new Date().toISOString();
+                    }
+                    this.targetEndAt = Date.now() + (this.secondsRemaining * 1000);
+                    this.isRunning = true;
+                    this.isPaused = false;
+                    this.persistState('running', false);
+                    this.startInterval();
+                },
+
+                startInterval() {
+                    this.pauseIntervalOnly();
+                    window.NaraFocusHelper?.updateTitle(this.formatTime(), 'running');
+                    this.timerInterval = setInterval(() => {
+                        if (!this.targetEndAt) return;
+                        const rem = Math.max(0, Math.ceil((this.targetEndAt - Date.now()) / 1000));
+                        this.secondsRemaining = rem;
+                        if (rem > 0) {
+                            window.NaraFocusHelper?.updateTitle(this.formatTime(), 'running');
+                        } else {
+                            this.handleTimerCompleted();
+                        }
+                    }, 500);
+                },
+
+                pauseIntervalOnly() {
+                    if (this.timerInterval) {
+                        clearInterval(this.timerInterval);
+                        this.timerInterval = null;
+                    }
+                },
+
+                pauseTimer() {
+                    if (this.targetEndAt) {
+                        this.secondsRemaining = Math.max(0, Math.ceil((this.targetEndAt - Date.now()) / 1000));
+                    }
+                    this.pauseIntervalOnly();
+                    this.isRunning = false;
+                    this.isPaused = true;
+                    this.targetEndAt = null;
+                    this.persistState('paused', false);
+                    window.NaraFocusHelper?.updateTitle(this.formatTime(), 'paused');
+                },
+
+                resetTimer() {
+                    this.pauseIntervalOnly();
+                    this.isRunning = false;
+                    this.isPaused = false;
+                    this.startedAt = null;
+                    this.targetEndAt = null;
+                    this.secondsRemaining = this.presetMinutes * 60;
+                    if (window.NaraFocusHelper) {
+                        window.NaraFocusHelper.clearSession();
+                    }
+                },
+
+                handleTimerCompleted() {
+                    this.pauseIntervalOnly();
+                    this.secondsRemaining = 0;
+                    this.isRunning = false;
+                    this.isPaused = false;
+                    this.targetEndAt = null;
+                    this.persistState('completed', true);
+                    window.NaraFocusHelper?.updateTitle('00:00', 'completed');
+                    window.NaraFocusHelper?.sendDesktopNotification(this.taskTitle, this.presetMinutes);
                     this.openLogModal();
+                },
+
+                openLogModal() {
+                    if (this.isRunning) {
+                        this.pauseTimer();
+                    }
+                    const elapsed = (this.presetMinutes * 60) - this.secondsRemaining;
+                    const elapsedMinutes = Math.max(1, Math.round(elapsed / 60));
+                    this.loggedMinutes = elapsed > 0 ? elapsedMinutes : this.presetMinutes;
+                    this.logModalOpen = true;
+                },
+
+                onFormSubmit() {
+                    if (window.NaraFocusHelper) {
+                        window.NaraFocusHelper.clearSession();
+                    }
                 }
-            }, 1000);
-        },
+            };
+        };
+    </script>
 
-        pauseTimer() {
-            this.isRunning = false;
-            this.isPaused = true;
-            if (this.timerInterval) {
-                clearInterval(this.timerInterval);
-                this.timerInterval = null;
-            }
-        },
+    <div class="max-w-4xl mx-auto" x-data="naraFocusPage()">
+        @if (session('status'))
+            <div class="mb-5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-semibold text-emerald-800 flex items-center justify-between shadow-2xs" role="status">
+                <div class="flex items-center gap-2">
+                    <span class="text-base">✅</span>
+                    <span>{{ session('status') }}</span>
+                </div>
+            </div>
+        @endif
 
-        resetTimer() {
-            this.pauseTimer();
-            this.isPaused = false;
-            this.secondsRemaining = this.presetMinutes * 60;
-        },
-
-        openLogModal() {
-            this.pauseTimer();
-            const elapsed = (this.presetMinutes * 60) - this.secondsRemaining;
-            const elapsedMinutes = Math.max(1, Math.round(elapsed / 60));
-            this.loggedMinutes = elapsedMinutes > 0 ? elapsedMinutes : this.presetMinutes;
-            this.logModalOpen = true;
-        }
-    }">
-        {{-- Header Status --}}
+        {{-- Header Status & Kontrol Notifikasi Desktop --}}
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-6">
             <div>
                 <p class="text-sm text-slate-600">
-                    Sesi kerja hening terdedikasi untuk satu task tanpa distraksi. Waktu tercatat otomatis ke <code>actual_minutes</code> task.
+                    Sesi kerja hening terdedikasi untuk satu task tanpa distraksi. Timer <strong>tetap berjalan otomatis</strong> meskipun Anda pindah halaman atau meminimalkan browser.
                 </p>
-                <p class="text-xs text-slate-500 mt-1">
-                    Total fokus hari ini: <strong class="text-slate-800">{{ $todayTotalMinutes }} menit</strong> ({{ round($todayTotalMinutes / 60, 1) }} jam)
-                </p>
+                <div class="flex flex-wrap items-center gap-3 mt-1.5">
+                    <p class="text-xs text-slate-500">
+                        Total fokus hari ini: <strong class="text-slate-800">{{ $todayTotalMinutes }} menit</strong> ({{ round($todayTotalMinutes / 60, 1) }} jam)
+                    </p>
+                    <span class="text-slate-300">•</span>
+
+                    {{-- Status & Tombol Izin Notifikasi Desktop --}}
+                    <template x-if="notifPermission === 'granted'">
+                        <div class="inline-flex items-center gap-2">
+                            <span class="inline-flex items-center gap-1 text-[11px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                <span>🔔</span>
+                                <span>Notifikasi Desktop & Suara Aktif</span>
+                            </span>
+                            <button type="button" @click="requestNotifPermission(true)" class="text-[11px] text-sky-700 hover:underline font-medium cursor-pointer">
+                                🔊 Uji Suara & Notif
+                            </button>
+                        </div>
+                    </template>
+
+                    <template x-if="notifPermission === 'default'">
+                        <button type="button" @click="requestNotifPermission(true)"
+                                class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-800 bg-amber-50 hover:bg-amber-100 px-2.5 py-0.5 rounded-full border border-amber-300 transition cursor-pointer">
+                            <span>🔔</span>
+                            <span>Aktifkan Notifikasi Desktop</span>
+                        </button>
+                    </template>
+
+                    <template x-if="notifPermission === 'denied'">
+                        <div class="inline-flex items-center gap-2">
+                            <span class="inline-flex items-center gap-1 text-[11px] text-slate-500 bg-slate-100 px-2 py-0.5 rounded-full">
+                                <span>🔊</span>
+                                <span>Alarm Suara Aktif (Notifikasi OS Diblokir Browser)</span>
+                            </span>
+                            <button type="button" @click="window.NaraFocusHelper.playChime()" class="text-[11px] text-sky-700 hover:underline font-medium cursor-pointer">
+                                Uji Suara
+                            </button>
+                        </div>
+                    </template>
+                </div>
             </div>
+
             @if ($tasks->isNotEmpty())
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 shrink-0">
                     <label for="taskSelect" class="text-xs font-medium text-slate-700">Pilih Task:</label>
                     <select
                         id="taskSelect"
-                        @change="window.location.href = '{{ route('panel.focus') }}?task_id=' + $event.target.value"
+                        x-ref="taskSelect"
+                        :value="taskId"
+                        @change="changeTask($event.target.value)"
                         class="text-xs rounded-lg border-slate-300 py-1.5 px-2.5 focus:border-sky-500 max-w-xs"
                     >
                         @foreach ($tasks as $t)
@@ -103,17 +394,22 @@
             <div class="nara-card p-8 text-center border-2 border-slate-200/80 shadow-md mb-8 relative overflow-hidden bg-gradient-to-b from-white to-slate-50/50">
                 {{-- Detail Task Aktif --}}
                 <div class="max-w-xl mx-auto mb-6">
-                    <span class="text-[11px] font-bold uppercase tracking-wider text-sky-700 bg-sky-100 px-2.5 py-0.5 rounded-full inline-block mb-2">
-                        Sedang Dikerjakan (Focus Mode)
+                    <span class="text-[11px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full inline-flex items-center gap-1.5 mb-2"
+                          :class="isRunning ? 'text-emerald-800 bg-emerald-100' : 'text-sky-700 bg-sky-100'">
+                        <span x-show="isRunning" class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                        <span x-text="isRunning ? 'Sedang Berjalan (Tetap Aktif di Latar Belakang)' : 'Sedang Dikerjakan (Focus Mode)'">Sedang Dikerjakan (Focus Mode)</span>
                     </span>
-                    <h2 class="text-xl font-bold text-slate-900 mb-1 leading-snug">
+                    <h2 class="text-xl font-bold text-slate-900 mb-1 leading-snug" x-text="taskTitle">
                         {{ $selectedTask->title }}
                     </h2>
                     <p class="text-xs text-slate-500">
-                        📁 Proyek: <strong class="text-slate-700">{{ $selectedTask->project->name }}</strong>
-                        @if ($selectedTask->due_date)
-                            • Tenggat: <span class="{{ $selectedTask->isOverdue() ? 'text-rose-600 font-bold' : 'text-slate-600' }}">{{ $selectedTask->due_date->format('d M Y') }}</span>
-                        @endif
+                        📁 Proyek: <strong class="text-slate-700" x-text="projectName">{{ $selectedTask->project->name }}</strong>
+                        <template x-if="dueDate">
+                            <span>
+                                • Tenggat:
+                                <span :class="isOverdue ? 'text-rose-600 font-bold' : 'text-slate-600'" x-text="dueDate"></span>
+                            </span>
+                        </template>
                     </p>
                 </div>
 
@@ -176,7 +472,7 @@
                     </div>
 
                     <div class="text-xs text-slate-500 font-medium mt-3"
-                         x-text="isRunning ? '⚡ Timer sedang berjalan... Tetap fokus pada task ini.' : (isPaused ? '⏸️ Timer dijeda sementara.' : 'Pilih durasi di atas lalu klik Mulai Fokus.')">
+                         x-text="isRunning ? '⚡ Timer sedang berjalan... Anda bebas berpindah halaman, timer akan tampil di pojok kanan bawah.' : (isPaused ? '⏸️ Timer dijeda sementara.' : 'Pilih durasi di atas lalu klik Mulai Fokus.')">
                         Pilih durasi di atas lalu klik Mulai Fokus.
                     </div>
                 </div>
@@ -239,12 +535,13 @@
                         <button type="button" @click="logModalOpen = false" class="text-slate-400 hover:text-slate-600">✕</button>
                     </div>
                     <p class="text-xs text-slate-500 mb-4">
-                        Simpan capaian fokus Anda untuk task <strong>{{ $selectedTask->title }}</strong>.
+                        Simpan capaian fokus Anda untuk task <strong class="text-slate-800" x-text="taskTitle">{{ $selectedTask->title }}</strong>.
                     </p>
 
-                    <form action="{{ route('panel.focus.store') }}" method="POST" class="space-y-4">
+                    <form action="{{ route('panel.focus.store') }}" method="POST" class="space-y-4" @submit="onFormSubmit()">
                         @csrf
-                        <input type="hidden" name="task_id" value="{{ $selectedTask->id }}">
+                        <input type="hidden" name="task_id" :value="taskId">
+                        <input type="hidden" name="started_at" :value="startedAt">
 
                         <div>
                             <label class="block text-xs font-semibold text-slate-700 mb-1">Durasi Fokus (Menit)</label>

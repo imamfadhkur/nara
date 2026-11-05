@@ -34,7 +34,12 @@ class ProfileController extends Controller
 
         $request->user()->save();
 
-        return Redirect::route('profile.edit')->with('status', 'profile-updated');
+        $redirectTo = $request->input('redirect_to');
+        if ($redirectTo && (str_starts_with($redirectTo, '/') || str_starts_with($redirectTo, url('/')))) {
+            return redirect($redirectTo)->with('status', 'profile-updated')->with('toast', 'Profil akun berhasil diperbarui.');
+        }
+
+        return Redirect::route('profile.edit')->with('status', 'profile-updated')->with('toast', 'Profil akun berhasil diperbarui.');
     }
 
     /**

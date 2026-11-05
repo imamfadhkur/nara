@@ -28,4 +28,22 @@ class ProfileUpdateRequest extends FormRequest
             ],
         ];
     }
+
+    /**
+     * Pesan validasi kustom dalam Bahasa Indonesia.
+     *
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'name.required' => 'Nama lengkap wajib diisi.',
+            'name.string' => 'Nama harus berupa teks yang valid.',
+            'name.max' => 'Nama maksimal 255 karakter.',
+            'email.required' => 'Alamat email (username login) wajib diisi.',
+            'email.email' => 'Format alamat email tidak valid.',
+            'email.max' => 'Alamat email maksimal 255 karakter.',
+            'email.unique' => 'Alamat email ini sudah digunakan oleh akun lain.',
+        ];
+    }
 }

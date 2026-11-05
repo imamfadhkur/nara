@@ -18,9 +18,9 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        // Kata sandi minimal 14 karakter (Bagian 13.1).
+        // Kata sandi minimal 6 karakter (Bagian 13.1).
         Password::defaults(function () {
-            return Password::min((int) config('nara.password_min_length', 14));
+            return Password::min((int) config('nara.password_min_length', 6));
         });
 
         // HTTPS wajib di produksi (Bagian 13.1).

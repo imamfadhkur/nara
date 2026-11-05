@@ -24,7 +24,7 @@ class EnsureTwoFactorEnabled
             return $next($request);
         }
 
-        if ($request->routeIs('panel.settings.*', 'logout')) {
+        if ($request->routeIs('panel.settings.*', 'profile.*', 'logout')) {
             return $next($request);
         }
 

@@ -82,7 +82,7 @@
         {{-- 2. Empat Kartu KPI Interaktif --}}
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {{-- KPI 1: Sesi Hari Ini --}}
-            <div class="bg-white rounded-2xl p-4.5 border border-slate-200/80 shadow-xs hover:shadow-sm transition">
+            <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm hover:shadow-md transition">
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Jadwal Hari Ini</span>
                     <div class="w-8 h-8 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
@@ -104,7 +104,7 @@
             </div>
 
             {{-- KPI 2: Task Selesai Minggu Ini --}}
-            <div class="bg-white rounded-2xl p-4.5 border border-slate-200/80 shadow-xs hover:shadow-sm transition">
+            <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm hover:shadow-md transition">
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Progres Minggu Ini</span>
                     <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
@@ -123,7 +123,7 @@
             </div>
 
             {{-- KPI 3: Output Nyata --}}
-            <div class="bg-white rounded-2xl p-4.5 border border-slate-200/80 shadow-xs hover:shadow-sm transition">
+            <div class="bg-white rounded-2xl p-5 border border-slate-200/80 shadow-sm hover:shadow-md transition">
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-xs font-bold uppercase tracking-wider text-slate-500">Output Karya</span>
                     <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
@@ -145,7 +145,7 @@
             </div>
 
             {{-- KPI 4: Radar Perhatian --}}
-            <div class="bg-white rounded-2xl p-4.5 border {{ $attentionCount > 0 ? ($overdueTasks->count() > 0 ? 'border-rose-300 bg-rose-50/20' : 'border-amber-300 bg-amber-50/20') : 'border-slate-200/80' }} shadow-xs hover:shadow-sm transition">
+            <div class="bg-white rounded-2xl p-5 border {{ $attentionCount > 0 ? ($overdueTasks->count() > 0 ? 'border-rose-300 bg-rose-50/20' : 'border-amber-300 bg-amber-50/20') : 'border-slate-200/80' }} shadow-sm hover:shadow-md transition">
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-xs font-bold uppercase tracking-wider {{ $attentionCount > 0 ? 'text-rose-700' : 'text-slate-500' }}">Radar Perhatian</span>
                     <div class="w-8 h-8 rounded-xl {{ $attentionCount > 0 ? ($overdueTasks->count() > 0 ? 'bg-rose-100 text-rose-600' : 'bg-amber-100 text-amber-600') : 'bg-slate-100 text-slate-500' }} flex items-center justify-center">
@@ -249,148 +249,332 @@
         {{-- 4. Konten Utama: Timeline Sesi Hari Ini & Kolom Samping --}}
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
 
-            {{-- Kolom Kiri: Vertical Focus Timeline --}}
-            <div class="lg:col-span-2 space-y-4">
-                <div class="flex items-center justify-between pb-1">
-                    <div class="flex items-center gap-2">
-                        <h2 class="text-sm font-bold uppercase tracking-wider text-slate-800">
-                            Jadwal Sesi Fokus Hari Ini
-                        </h2>
-                        <span class="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-semibold">
-                            {{ $todaySchedules->count() }}
-                        </span>
+            {{-- Kolom Kiri: Vertical Focus Timeline + Matrix Classifier --}}
+            <div class="lg:col-span-2 space-y-8">
+                {{-- BAGIAN UTAMA: Jadwal Sesi Fokus Hari Ini (Alokasi Jam Spesifik) --}}
+                <div class="space-y-4">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1">
+                        <div class="flex items-center gap-2.5">
+                            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-800">
+                                Jadwal Sesi Fokus Hari Ini
+                            </h2>
+                            <span class="text-xs px-2.5 py-0.5 rounded-full bg-slate-200/80 text-slate-700 font-bold">
+                                {{ $todaySchedules->count() }}
+                            </span>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <a href="{{ route('panel.calendar.index') }}" class="text-xs text-slate-600 hover:text-sky-700 hover:underline font-medium">
+                                + Alokasikan Jam →
+                            </a>
+                            <a href="{{ route('panel.tasks.index') }}" class="text-xs text-sky-700 hover:underline font-semibold">
+                                Tabel Semua Task →
+                            </a>
+                        </div>
                     </div>
-                    <a href="{{ route('panel.tasks.index') }}" class="text-xs text-sky-700 hover:underline font-medium">
-                        Tabel Semua Task →
-                    </a>
+
+                    @if ($todaySchedules->isEmpty())
+                        <div class="bg-white rounded-2xl p-8 text-center border border-slate-200 shadow-sm">
+                            <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
+                                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                </svg>
+                            </div>
+                            <h3 class="text-sm font-semibold text-slate-800">Tidak ada jadwal sesi dengan jam spesifik hari ini</h3>
+                            <p class="text-xs text-slate-500 mt-1.5 max-w-md mx-auto leading-relaxed">
+                                Belum ada task yang dialokasikan ke jam spesifik di kalender hari ini. Anda dapat mengalokasikan jam di Kalender atau langsung memilih dari rekomendasi <strong>Matrix Prioritas</strong> di bawah.
+                            </p>
+                            <div class="mt-4 flex items-center justify-center gap-2.5 flex-wrap">
+                                <a href="{{ route('panel.calendar.index') }}" class="nara-btn-primary text-xs">📅 Alokasikan di Kalender</a>
+                                <a href="{{ route('panel.inbox.index') }}" class="nara-btn-secondary text-xs">Periksa Inbox</a>
+                                <a href="{{ route('panel.kanban.index') }}" class="nara-btn-secondary text-xs">Buka Kanban</a>
+                            </div>
+                        </div>
+                    @else
+                        {{-- Vertical Timeline List --}}
+                        <div class="relative pl-8 sm:pl-10 space-y-4 before:absolute before:left-3 sm:before:left-3.5 before:top-4 before:bottom-4 before:w-0.5 before:bg-slate-200">
+                            @foreach ($todaySchedules as $schedule)
+                                @php
+                                    $startTime = $schedule->start_at->setTimezone($userTz);
+                                    $endTime = $schedule->end_at->setTimezone($userTz);
+                                    $timeStr = $startTime->format('H:i') . ' – ' . $endTime->format('H:i');
+                                    $durationMnt = $schedule->durationMinutes();
+                                    $isDone = $schedule->task->status === \App\Support\Enums\TaskStatus::Done;
+                                @endphp
+
+                                <div class="relative group">
+                                    {{-- Timeline Dot Marker --}}
+                                    <div class="absolute -left-7 sm:-left-9 top-6 flex items-center justify-center">
+                                        @if ($isDone)
+                                            <div class="w-5 h-5 rounded-full bg-emerald-500 border-2 border-white shadow-sm text-white flex items-center justify-center">
+                                                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                            </div>
+                                        @else
+                                            <div class="w-5 h-5 rounded-full bg-white border-2 border-sky-500 shadow-sm flex items-center justify-center">
+                                                <div class="w-2 h-2 rounded-full bg-sky-500"></div>
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    {{-- Session Card (dengan padding p-5 yang lega agar tidak menyentuh garis kartu) --}}
+                                    <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition {{ $isDone ? 'bg-slate-50/70 opacity-85' : '' }}">
+                                        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                            <div class="space-y-2 flex-1 min-w-0">
+                                                {{-- Time & Project Badge --}}
+                                                <div class="flex items-center gap-2 flex-wrap">
+                                                    <span class="inline-flex items-center gap-1.5 font-mono text-xs font-bold px-2.5 py-1 rounded-lg {{ $isDone ? 'bg-slate-200/70 text-slate-600' : 'bg-sky-50 text-sky-800 border border-sky-200' }}">
+                                                        <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                                        </svg>
+                                                        <span>{{ $timeStr }}</span>
+                                                        <span class="text-slate-500 font-normal">({{ $durationMnt }} mnt)</span>
+                                                    </span>
+
+                                                    <span class="text-xs font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg">
+                                                        📁 {{ $schedule->task->project->name }}
+                                                    </span>
+
+                                                    @if ($schedule->task->isOverdue() && ! $isDone)
+                                                        <span class="text-xs font-bold text-rose-600 bg-rose-50 px-2.5 py-1 rounded-lg border border-rose-200">
+                                                            ⚠ Terlambat
+                                                        </span>
+                                                    @endif
+                                                </div>
+
+                                                {{-- Task Title --}}
+                                                <div class="pt-0.5">
+                                                    <a href="{{ route('panel.tasks.show', $schedule->task) }}" class="text-base font-bold text-slate-900 hover:text-sky-700 transition leading-snug break-words block {{ $isDone ? 'line-through text-slate-400' : '' }}">
+                                                        {{ $schedule->task->title }}
+                                                    </a>
+                                                </div>
+
+                                                {{-- Note / Subtasks count --}}
+                                                @if ($schedule->note)
+                                                    <p class="text-xs text-slate-500 italic break-words leading-relaxed">"{{ $schedule->note }}"</p>
+                                                @endif
+
+                                                @if ($schedule->task->subtasks->isNotEmpty())
+                                                    @php
+                                                        $subDone = $schedule->task->subtasks->where('is_done', true)->count();
+                                                        $subTotal = $schedule->task->subtasks->count();
+                                                        $subPct = round(($subDone / $subTotal) * 100);
+                                                    @endphp
+                                                    <div class="flex items-center gap-2.5 pt-1 max-w-xs">
+                                                        <div class="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                                                            <div class="bg-sky-500 h-1.5 rounded-full" style="width: {{ $subPct }}%"></div>
+                                                        </div>
+                                                        <span class="text-[11px] font-medium text-slate-500 whitespace-nowrap">{{ $subDone }}/{{ $subTotal }} subtask</span>
+                                                    </div>
+                                                @endif
+                                            </div>
+
+                                            {{-- Actions --}}
+                                            <div class="flex items-center gap-2 self-end sm:self-center shrink-0 pt-2 sm:pt-0">
+                                                @if ($isDone)
+                                                    <span class="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-lg border border-emerald-200">
+                                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                        <span>Selesai</span>
+                                                    </span>
+                                                @else
+                                                    <a
+                                                        href="{{ route('panel.focus', ['task_id' => $schedule->task->id]) }}"
+                                                        class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 transition"
+                                                        title="Mulai Timer Mode Fokus untuk task ini"
+                                                    >
+                                                        <span>⏱️ Fokus</span>
+                                                    </a>
+                                                    <button
+                                                        type="button"
+                                                        @click="openDoneModal({{ $schedule->task->id }}, $el.dataset.title, $el.dataset.est)"
+                                                        data-title="{{ $schedule->task->title }}"
+                                                        data-est="{{ $schedule->task->estimated_minutes ?? 60 }}"
+                                                        class="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition cursor-pointer"
+                                                    >
+                                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                                        </svg>
+                                                        <span>Tandai Selesai</span>
+                                                    </button>
+                                                @endif
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
                 </div>
 
-                @if ($todaySchedules->isEmpty())
-                    <div class="bg-white rounded-2xl p-10 text-center border border-slate-200/80 shadow-xs">
-                        <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3">
-                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
+                {{-- BAGIAN KEDUA: Rekomendasi Task Terdekat & Terpenting (Matrix Classifier) --}}
+                <div class="space-y-4 pt-6 border-t border-slate-200" x-data="{ matrixFilter: 'all' }">
+                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                        <div class="flex items-center gap-2.5">
+                            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-800">
+                                🧭 Prioritas & Task Terdekat (Matrix Eisenhower)
+                            </h2>
+                            <span class="text-xs px-2.5 py-0.5 rounded-full bg-sky-100 text-sky-800 font-bold">
+                                {{ $matrixTasks->count() }}
+                            </span>
                         </div>
-                        <h3 class="text-sm font-semibold text-slate-800">Tidak ada jadwal hari ini</h3>
-                        <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
-                            Gunakan waktu untuk membersihkan Inbox atau jadwalkan task penting dari Kanban view.
-                        </p>
-                        <div class="mt-4 flex items-center justify-center gap-2">
-                            <a href="{{ route('panel.inbox.index') }}" class="nara-btn-secondary text-xs">Periksa Inbox</a>
-                            <a href="{{ route('panel.kanban.index') }}" class="nara-btn-primary text-xs">Buka Kanban</a>
-                        </div>
+                        <a href="{{ route('panel.matrix.index') }}" class="text-xs text-sky-700 hover:underline font-semibold">
+                            Buka Papan Matrix 4 Kuadran →
+                        </a>
                     </div>
-                @else
-                    {{-- Vertical Timeline List --}}
-                    <div class="relative pl-6 sm:pl-8 space-y-4 before:absolute before:left-2.5 sm:before:left-3.5 before:top-3 before:bottom-3 before:w-0.5 before:bg-slate-200">
-                        @foreach ($todaySchedules as $schedule)
-                            @php
-                                $startTime = $schedule->start_at->setTimezone($userTz);
-                                $endTime = $schedule->end_at->setTimezone($userTz);
-                                $timeStr = $startTime->format('H:i') . ' – ' . $endTime->format('H:i');
-                                $durationMnt = $schedule->durationMinutes();
-                                $isDone = $schedule->task->status === \App\Support\Enums\TaskStatus::Done;
-                            @endphp
 
-                            <div class="relative group">
-                                {{-- Timeline Dot Marker --}}
-                                <div class="absolute -left-6 sm:-left-8 top-4 flex items-center justify-center">
-                                    @if ($isDone)
-                                        <div class="w-5 h-5 rounded-full bg-emerald-500 border-2 border-white shadow-xs text-white flex items-center justify-center">
-                                            <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                            </svg>
-                                        </div>
-                                    @else
-                                        <div class="w-5 h-5 rounded-full bg-white border-2 border-sky-500 shadow-xs flex items-center justify-center">
-                                            <div class="w-2 h-2 rounded-full bg-sky-500"></div>
-                                        </div>
-                                    @endif
-                                </div>
+                    {{-- Filter Kuadran Matrix --}}
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <button
+                            type="button"
+                            @click="matrixFilter = 'all'"
+                            :class="matrixFilter === 'all' ? 'bg-slate-800 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'"
+                            class="text-xs font-semibold px-3.5 py-1.5 rounded-xl transition cursor-pointer"
+                        >
+                            Semua ({{ $matrixTasks->count() }})
+                        </button>
+                        <button
+                            type="button"
+                            @click="matrixFilter = 'kerjakan'"
+                            :class="matrixFilter === 'kerjakan' ? 'bg-rose-600 text-white shadow-sm' : 'bg-rose-50 text-rose-700 border border-rose-200 hover:bg-rose-100'"
+                            class="text-xs font-semibold px-3.5 py-1.5 rounded-xl transition cursor-pointer"
+                        >
+                            🔥 Kerjakan ({{ $matrixQuadrants['kerjakan']->count() }})
+                        </button>
+                        <button
+                            type="button"
+                            @click="matrixFilter = 'jadwalkan'"
+                            :class="matrixFilter === 'jadwalkan' ? 'bg-sky-600 text-white shadow-sm' : 'bg-sky-50 text-sky-700 border border-sky-200 hover:bg-sky-100'"
+                            class="text-xs font-semibold px-3.5 py-1.5 rounded-xl transition cursor-pointer"
+                        >
+                            🎯 Jadwalkan ({{ $matrixQuadrants['jadwalkan']->count() }})
+                        </button>
+                        <button
+                            type="button"
+                            @click="matrixFilter = 'cepatkan'"
+                            :class="matrixFilter === 'cepatkan' ? 'bg-amber-600 text-white shadow-sm' : 'bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100'"
+                            class="text-xs font-semibold px-3.5 py-1.5 rounded-xl transition cursor-pointer"
+                        >
+                            ⚡ Cepatkan ({{ $matrixQuadrants['cepatkan']->count() }})
+                        </button>
+                        <button
+                            type="button"
+                            @click="matrixFilter = 'suatu_saat'"
+                            :class="matrixFilter === 'suatu_saat' ? 'bg-slate-600 text-white shadow-sm' : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'"
+                            class="text-xs font-semibold px-3.5 py-1.5 rounded-xl transition cursor-pointer"
+                        >
+                            🌱 Suatu Saat ({{ $matrixQuadrants['suatu_saat']->count() }})
+                        </button>
+                    </div>
 
-                                {{-- Session Card --}}
-                                <div class="bg-white rounded-2xl p-4.5 border border-slate-200/80 shadow-xs hover:shadow-sm hover:border-slate-300 transition {{ $isDone ? 'bg-slate-50/50 opacity-80' : '' }}">
-                                    <div class="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                                        <div class="space-y-1.5 flex-1 min-w-0">
-                                            {{-- Time & Project Badge --}}
+                    @if ($matrixTasks->isEmpty())
+                        <div class="bg-white rounded-2xl p-8 text-center border border-slate-200 shadow-sm">
+                            <p class="text-xs text-slate-500">Semua task aktif sudah selesai! Tambahkan task baru untuk mulai merencanakan prioritas.</p>
+                        </div>
+                    @else
+                        <div class="space-y-3">
+                            @foreach ($matrixTasks as $mTask)
+                                @php
+                                    $quad = $mTask->matrix_quadrant;
+                                    $quadBadge = match ($quad) {
+                                        'kerjakan' => ['label' => '🔥 Kerjakan (Penting & Urgen)', 'class' => 'bg-rose-50 text-rose-700 border-rose-200'],
+                                        'jadwalkan' => ['label' => '🎯 Jadwalkan (Penting)', 'class' => 'bg-sky-50 text-sky-700 border-sky-200'],
+                                        'cepatkan' => ['label' => '⚡ Cepatkan (Urgen)', 'class' => 'bg-amber-50 text-amber-800 border-amber-200'],
+                                        default => ['label' => '🌱 Suatu Saat', 'class' => 'bg-slate-100 text-slate-600 border-slate-200'],
+                                    };
+                                    $isInProgress = $mTask->status === \App\Support\Enums\TaskStatus::InProgress;
+                                @endphp
+
+                                <div
+                                    x-show="matrixFilter === 'all' || matrixFilter === '{{ $quad }}'"
+                                    x-transition.opacity
+                                    class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm hover:shadow-md hover:border-slate-300 transition"
+                                >
+                                    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                        <div class="space-y-2 flex-1 min-w-0">
                                             <div class="flex items-center gap-2 flex-wrap">
-                                                <span class="inline-flex items-center gap-1 font-mono text-xs font-bold px-2.5 py-0.5 rounded-lg {{ $isDone ? 'bg-slate-200/70 text-slate-600' : 'bg-sky-50 text-sky-800 border border-sky-200/60' }}">
-                                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                                    </svg>
-                                                    <span>{{ $timeStr }}</span>
-                                                    <span class="text-slate-400 font-normal">({{ $durationMnt }} mnt)</span>
+                                                <span class="text-[11px] font-bold px-2.5 py-1 rounded-lg border {{ $quadBadge['class'] }}">
+                                                    {{ $quadBadge['label'] }}
                                                 </span>
 
-                                                <span class="text-xs font-semibold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">
-                                                    {{ $schedule->task->project->name }}
-                                                </span>
+                                                @if ($isInProgress)
+                                                    <span class="text-[11px] font-bold px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 border border-indigo-200">
+                                                        Sedang Dikerjakan
+                                                    </span>
+                                                @endif
 
-                                                @if ($schedule->task->isOverdue() && ! $isDone)
-                                                    <span class="text-xs font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-md border border-rose-200">
-                                                        ⚠ Terlambat
+                                                @if ($mTask->project)
+                                                    <span class="text-[11px] font-semibold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg">
+                                                        📁 {{ $mTask->project->name }}
+                                                    </span>
+                                                @endif
+
+                                                @if ($mTask->due_date)
+                                                    @php
+                                                        $isOverdue = $mTask->isOverdue();
+                                                        $isDueToday = $mTask->due_date->isSameDay($today);
+                                                    @endphp
+                                                    <span class="text-[11px] font-semibold px-2.5 py-1 rounded-lg {{ $isOverdue ? 'bg-rose-100 text-rose-700' : ($isDueToday ? 'bg-amber-100 text-amber-800' : 'bg-slate-100 text-slate-600') }}">
+                                                        🗓 {{ $isOverdue ? 'Terlambat ' . $mTask->due_date->format('d M') : ($isDueToday ? 'Hari Ini' : $mTask->due_date->format('d M Y')) }}
+                                                    </span>
+                                                @endif
+
+                                                @if ($mTask->estimated_minutes)
+                                                    <span class="text-[11px] text-slate-400 font-mono">
+                                                        ~{{ $mTask->estimated_minutes }}m
                                                     </span>
                                                 @endif
                                             </div>
 
-                                            {{-- Task Title --}}
-                                            <div>
-                                                <a href="{{ route('panel.tasks.show', $schedule->task) }}" class="text-base font-bold text-slate-900 hover:text-sky-700 transition leading-snug {{ $isDone ? 'line-through text-slate-400' : '' }}">
-                                                    {{ $schedule->task->title }}
+                                            <div class="pt-0.5">
+                                                <a href="{{ route('panel.tasks.show', $mTask) }}" class="text-base font-bold text-slate-900 hover:text-sky-700 transition leading-snug break-words block">
+                                                    {{ $mTask->title }}
                                                 </a>
                                             </div>
 
-                                            {{-- Note / Subtasks count --}}
-                                            @if ($schedule->note)
-                                                <p class="text-xs text-slate-500 italic">"{{ $schedule->note }}"</p>
-                                            @endif
-
-                                            @if ($schedule->task->subtasks->isNotEmpty())
+                                            @if ($mTask->subtasks->isNotEmpty())
                                                 @php
-                                                    $subDone = $schedule->task->subtasks->where('is_done', true)->count();
-                                                    $subTotal = $schedule->task->subtasks->count();
-                                                    $subPct = round(($subDone / $subTotal) * 100);
+                                                    $mSubDone = $mTask->subtasks->where('is_done', true)->count();
+                                                    $mSubTotal = $mTask->subtasks->count();
+                                                    $mSubPct = round(($mSubDone / $mSubTotal) * 100);
                                                 @endphp
-                                                <div class="flex items-center gap-2 pt-1 max-w-xs">
+                                                <div class="flex items-center gap-2.5 pt-1 max-w-xs">
                                                     <div class="flex-1 bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                                                        <div class="bg-sky-500 h-1.5 rounded-full" style="width: {{ $subPct }}%"></div>
+                                                        <div class="bg-sky-500 h-1.5 rounded-full" style="width: {{ $mSubPct }}%"></div>
                                                     </div>
-                                                    <span class="text-[11px] font-medium text-slate-500 whitespace-nowrap">{{ $subDone }}/{{ $subTotal }} subtask</span>
+                                                    <span class="text-[11px] font-medium text-slate-500 whitespace-nowrap">{{ $mSubDone }}/{{ $mSubTotal }} subtask</span>
                                                 </div>
                                             @endif
                                         </div>
 
-                                        {{-- Actions --}}
-                                        <div class="flex items-center gap-2 self-end sm:self-center shrink-0">
-                                            @if ($isDone)
-                                                <span class="inline-flex items-center gap-1 text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200">
-                                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                    <span>Selesai</span>
-                                                </span>
-                                            @else
-                                                <button
-                                                    type="button"
-                                                    @click="openDoneModal({{ $schedule->task->id }}, $el.dataset.title, $el.dataset.est)"
-                                                    data-title="{{ $schedule->task->title }}"
-                                                    data-est="{{ $schedule->task->estimated_minutes ?? 60 }}"
-                                                    class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition"
-                                                >
-                                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
-                                                    </svg>
-                                                    <span>Tandai Selesai</span>
-                                                </button>
-                                            @endif
+                                        <div class="flex items-center gap-2 self-end sm:self-center shrink-0 pt-2 sm:pt-0">
+                                            <a
+                                                href="{{ route('panel.focus', ['task_id' => $mTask->id]) }}"
+                                                class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-2 rounded-lg bg-sky-50 hover:bg-sky-100 text-sky-700 border border-sky-200 transition"
+                                                title="Mulai Timer Mode Fokus untuk task ini"
+                                            >
+                                                <span>⏱️ Mulai Fokus</span>
+                                            </a>
+                                            <button
+                                                type="button"
+                                                @click="openDoneModal({{ $mTask->id }}, $el.dataset.title, $el.dataset.est)"
+                                                data-title="{{ $mTask->title }}"
+                                                data-est="{{ $mTask->estimated_minutes ?? 60 }}"
+                                                class="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm transition cursor-pointer"
+                                            >
+                                                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                                                </svg>
+                                                <span>Selesai</span>
+                                            </button>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
             </div>
 
             {{-- Kolom Kanan: Radar Perhatian & Bukti Karya Minggu Ini --}}

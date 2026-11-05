@@ -1,29 +1,33 @@
-<x-app-layout>
-    <x-slot name="header">
-        <h2 class="font-semibold text-xl text-gray-800 leading-tight">
-            {{ __('Profile') }}
-        </h2>
-    </x-slot>
-
-    <div class="py-12">
-        <div class="max-w-7xl mx-auto sm:px-6 lg:px-8 space-y-6">
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    @include('profile.partials.update-profile-information-form')
-                </div>
+<x-panel-layout title="Profil & Akun Pengguna" heading="Pengaturan Profil & Akun">
+    <div class="space-y-6 max-w-4xl">
+        {{-- Banner navigasi cepat ke Pengaturan Umum & Integrasi --}}
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200 pb-3">
+            <div>
+                <p class="text-xs text-slate-500">
+                    Kelola nama profil, alamat email login, serta kata sandi akun NARA Anda.
+                </p>
             </div>
-
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    @include('profile.partials.update-password-form')
-                </div>
-            </div>
-
-            <div class="p-4 sm:p-8 bg-white shadow sm:rounded-lg">
-                <div class="max-w-xl">
-                    @include('profile.partials.delete-user-form')
-                </div>
+            <div class="flex items-center gap-2">
+                <a href="{{ route('panel.settings.index') }}" class="nara-btn-secondary text-xs py-1.5 px-3">
+                    <span>⚙️</span>
+                    <span>Pengaturan Sistem & Kapasitas →</span>
+                </a>
             </div>
         </div>
+
+        {{-- Kartu 1: Informasi Profil Akun --}}
+        <div class="nara-card p-6">
+            @include('profile.partials.update-profile-information-form')
+        </div>
+
+        {{-- Kartu 2: Ganti Kata Sandi --}}
+        <div class="nara-card p-6">
+            @include('profile.partials.update-password-form')
+        </div>
+
+        {{-- Kartu 3: Hapus Akun (Zona Berbahaya) --}}
+        <div class="nara-card p-6 border-rose-200 bg-rose-50/20">
+            @include('profile.partials.delete-user-form')
+        </div>
     </div>
-</x-app-layout>
+</x-panel-layout>

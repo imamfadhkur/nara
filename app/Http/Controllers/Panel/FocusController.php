@@ -97,8 +97,11 @@ class FocusController extends Controller
             $this->taskService->changeStatus($task, TaskStatus::InProgress);
         }
 
+        $msg = "Sesi fokus {$duration} menit berhasil dicatat untuk task \"{$task->title}\"!";
+
         return redirect()->route('panel.focus', ['task_id' => $task->id])
-            ->with('status', "Sesi fokus {$duration} menit berhasil dicatat untuk task \"{$task->title}\"!");
+            ->with('status', $msg)
+            ->with('toast', ['type' => 'success', 'message' => $msg]);
     }
 }
 
