@@ -1,0 +1,25 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+
+class Tag extends Model
+{
+    protected $fillable = ['user_id', 'name', 'color'];
+
+    /** @return BelongsTo<User, $this> */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    /** @return BelongsToMany<Task, $this> */
+    public function tasks(): BelongsToMany
+    {
+        return $this->belongsToMany(Task::class, 'task_tags');
+    }
+}
+
