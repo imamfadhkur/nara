@@ -261,14 +261,17 @@ test('focus mode records elapsed time and updates actual_minutes on task', funct
         'actual_minutes' => 0,
     ]);
 
-    $this->actingAs($user)
+    $response = $this->actingAs($user)
+        ->followingRedirects()
         ->post(route('panel.focus.store'), [
             'task_id' => $task->id,
             'duration_minutes' => 45,
             'note' => 'Bab 1 selesai ditulis',
             'mark_done' => 0,
-        ])
-        ->assertRedirect();
+        ]);
+
+    $response->assertOk();
+    $response->assertSee('Sesi fokus 45 menit berhasil dicatat');
 
     $task->refresh();
     expect($task->actual_minutes)->toBe(45);
